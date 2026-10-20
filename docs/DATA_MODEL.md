@@ -71,13 +71,13 @@ DOH-style thresholds, applied per province and per morbidity week:
 
 ## References (convert to APA 7th edition before submission)
 
-- Matsushita et al. (2018), PLOS Neglected Tropical Diseases: rainfall–leptospirosis lag in Manila. https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5905126/
-- Carvajal et al. (2018), BMC Infectious Diseases: dengue–weather machine learning models in Metro Manila. URL: TBD
+- Matsushita et al. (2018), PLOS Neglected Tropical Diseases, 12(4), e0006331: rainfall–leptospirosis lag in Manila. https://doi.org/10.1371/journal.pntd.0006331
+- Carvajal et al. (2018), BMC Infectious Diseases, 18(1), 183: dengue–weather machine learning models in Metro Manila. https://doi.org/10.1186/s12879-018-3066-0
 - HDX Philippine Dengue Cases and Deaths: https://data.humdata.org/dataset/philippine-dengue-cases-and-deaths
 - DrivenData DengAI benchmark: https://drivendata.co/blog/dengue-benchmark
 - PJDSC catalogue: https://pjdsc26-website.vercel.app/catalogue
 - Zenodo QC dengue + weather: https://zenodo.org/records/21978184
 - Mendeley PH epidemiological data: https://data.mendeley.com/datasets/v98325dpxv/1
-- NASA POWER API: URL TBD
+- NASA POWER API: https://power.larc.nasa.gov/
 - Sri Lanka SARIMA leptospirosis study: citation TBD
 - DOH 2025 leptospirosis figures and NKTI ward report: citation TBD
