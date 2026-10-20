@@ -11,7 +11,7 @@
   3. Strengthen healthcare reach in communities.
 - **Theme:** "Trace the Pattern, Target the Cure: Advancing Public Health Through Data Science."
 - **Official dataset catalogue:** https://pjdsc26-website.vercel.app/catalogue
-- **Deadline:** Oct 24, 2026. ⚠️ UNVERIFIED: this comes from another team's public README. Confirm on the official FAQ/primer.
+- **Deadline:** Oct 24, 2026 (confirmed). Team target: finish by Oct 23, 2026.
 - **Judging criteria** (⚠️ UNVERIFIED, secondhand):
   - Project rationale & design
   - Execution & impact

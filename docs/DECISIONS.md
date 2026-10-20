@@ -10,3 +10,5 @@ Format: YYYY-MM-DD | who | AI model | decision | why
 2026-10-20 | Fabi | Claude (claude.ai) | GitHub repo markdown files = single source of truth for all teammates' AIs | Team uses different AI models; Docs drift out of sync
 2026-10-20 | Fabi | Claude Code (claude-opus-5-5) | Bootstrap AGENTS.md + CLAUDE.md/GEMINI.md pointers + docs/* context files | One entry point every AI reads; per-person STATUS sections avoid overwrites
 2026-10-20 | Paul | Claude Code (claude-opus-5-5) | No team captain. Roles: UI + demo = Ivanne, Diego; code + model = JD, JP, Paul; slides = Paul; proposal = all | Team agreed on role split
+2026-10-20 | Paul | Claude Code (claude-opus-5-5) | Deadline confirmed Oct 24, 2026; team target is to finish by Oct 23 | One-day buffer before submission
+2026-10-20 | Paul | Claude Code (claude-opus-5-5) | Migrate Google Docs UI tab into docs/UI_SPEC.md; repo copy is now the source of truth | Single source of truth for all teammates' AIs

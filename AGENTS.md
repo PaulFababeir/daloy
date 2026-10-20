@@ -2,7 +2,7 @@
 
 **Project:** `<project-name>` (name TBD; "Trace the rain, target the outbreak"), the team's PJDSC 2026 entry. It forecasts weekly dengue outbreak risk per province 1–4 weeks ahead from DOH surveillance and weather data, and flags leptospirosis surges about 2 weeks after heavy rain, with plain-language alerts and recommended actions for LGUs.
 
-**Deadline:** Oct 24, 2026. ⚠️ UNVERIFIED: confirm on the official PJDSC FAQ/primer.
+**Deadline:** Oct 24, 2026 (confirmed). **Team target: finish by Oct 23, 2026.**
 
 **Tech stack:** Python (pandas, geopandas, statsmodels, LightGBM, SHAP), Streamlit app, folium and/or plotly for maps and charts.
 
