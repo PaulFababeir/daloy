@@ -17,6 +17,7 @@
 - Update **only your own person's section** in `docs/STATUS.md`.
 - Append decisions to `docs/DECISIONS.md` as `YYYY-MM-DD | who | AI model | decision | why`.
 - Update `docs/UI_SPEC.md` or `docs/DATA_MODEL.md` if the design changed.
+- Add any new link (document, dataset, paper, tool) to `docs/LINKS.md`.
 
 ## Don'ts
 
@@ -38,7 +39,7 @@ At the end of the session, output the **full updated markdown of every file you 
 
 ### Starter prompt for teammates using browser chat AIs
 
-> Read AGENTS.md, docs/STATUS.md, and [relevant spec] from [repo link or pasted content]. Follow the update rules in AGENTS.md. At the end, give me the exact updated markdown for any file you changed so I can commit it.
+> Read AGENTS.md, docs/STATUS.md, and [relevant spec] from [https://github.com/PaulFababeir/pjdsc-app or pasted content]. Follow the update rules in AGENTS.md. At the end, give me the exact updated markdown for any file you changed so I can commit it.
 
 ## Repo layout
 
@@ -50,6 +51,7 @@ docs/UI_SPEC.md        screens, components, user flow
 docs/DATA_MODEL.md     datasets, features, models, evaluation
 docs/STATUS.md         who's doing what, blockers, next steps
 docs/DECISIONS.md      append-only decision log
+docs/LINKS.md          all links: proposal doc, deliverables, datasets, papers, tools
 app/                   Streamlit app
 data/                  datasets
 notebooks/             exploration and modeling notebooks

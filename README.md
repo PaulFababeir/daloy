@@ -6,3 +6,4 @@
 
 - Project overview: [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md)
 - Current status: [docs/STATUS.md](docs/STATUS.md)
+- All links (proposal doc, datasets, references): [docs/LINKS.md](docs/LINKS.md)
