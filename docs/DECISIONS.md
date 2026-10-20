@@ -9,3 +9,4 @@ Format: YYYY-MM-DD | who | AI model | decision | why
 2026-10-19 | Fabi | Claude (claude.ai) | Always benchmark vs seasonal baseline; include lagged cases | Evidence shows weather alone adds modest gains
 2026-10-20 | Fabi | Claude (claude.ai) | GitHub repo markdown files = single source of truth for all teammates' AIs | Team uses different AI models; Docs drift out of sync
 2026-10-20 | Fabi | Claude Code (claude-opus-5-5) | Bootstrap AGENTS.md + CLAUDE.md/GEMINI.md pointers + docs/* context files | One entry point every AI reads; per-person STATUS sections avoid overwrites
+2026-10-20 | Paul | Claude Code (claude-opus-5-5) | No team captain. Roles: UI + demo = Ivanne, Diego; code + model = JD, JP, Paul; slides = Paul; proposal = all | Team agreed on role split

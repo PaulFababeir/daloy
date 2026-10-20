@@ -7,14 +7,31 @@
 - Deadline: Oct 24, 2026 (UNVERIFIED — confirm on official FAQ).
 - MVP plan and feature priorities: see `docs/PROJECT_BRIEF.md`.
 
-## Fabi (captain)
-- Doing: setting up shared repo + AI context files.
-- Next: confirm deadline / external-data rule / deliverables on official FAQ.
+## Team roles
+No team captain.
 
-## UI team — TBD (names)
+| Area | Who |
+|---|---|
+| UI, demo | Ivanne, Diego |
+| Code, model | JD, JP, Paul |
+| Slides | Paul |
+| Proposal | All |
+
+## Ivanne (UI, demo, proposal)
 - Doing: UI design (content currently in Google Docs UI tab — to migrate into docs/UI_SPEC.md).
 
-## Data/Model team — TBD (names)
+## Diego (UI, demo, proposal)
+- Doing: UI design (content currently in Google Docs UI tab — to migrate into docs/UI_SPEC.md).
+
+## JD (code, model, proposal)
+- Next: build weekly province dengue panel (HDX 2016–2020) + NASA POWER weather.
+
+## JP (code, model, proposal)
+- Next: build weekly province dengue panel (HDX 2016–2020) + NASA POWER weather.
+
+## Paul (code, model, slides, proposal)
+- Doing: setting up shared repo + AI context files.
+- Next: confirm deadline / external-data rule / deliverables on official FAQ.
 - Next: build weekly province dengue panel (HDX 2016–2020) + NASA POWER weather.
 
 ## Blockers
@@ -23,6 +40,5 @@
 
 ## Open items
 - [ ] Paste the Google Docs UI tab into `docs/UI_SPEC.md`.
-- [ ] Add team member names and roles to the sections above.
 - [ ] Confirm deadline, external-data rule and deliverable format on the official PJDSC FAQ/primer.
 - [ ] Decide the app name (placeholder: `<project-name>`).

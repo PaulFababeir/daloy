@@ -21,7 +21,6 @@
   - Sources: reliable, up to date, APA 7th edition
 - **Accepted deliverables:** web app, mobile app, dashboard, or another usable product.
 - **External data:** the catalogue links out to data.gov.ph, WHO GHO, HDX, UNICEF and the UP DSSoc PJDSC-Datasets GitHub, which suggests outside data is allowed. ⚠️ Confirm the rule on the FAQ and **cite every source**.
-- **Team:** Fabi is the team captain. Other members: TBD. Teammates use different AI models, which is why this repo's context-file system exists.
 
 ## Concept
 
