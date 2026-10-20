@@ -73,16 +73,16 @@ The disease toggle swaps which drivers are highlighted, which makes this distinc
 ## Rough wireframe
 
 ```
-┌──────────────────────────────────────────────┐
+┌───────────────────────────────────────────────┐
 │ Logo   [Dengue | Leptospirosis | Both]  Alerts│
-├───────────────┬──────────────────────────────┤
-│ Summary cards │                              │
-│ • Top areas   │         RISK MAP             │
-│ • # High risk │                              │
-│ • Weekly Δ    │   [ time slider: +1 +2 +4 ]  │
-├───────────────┴──────────────────────────────┤
+├───────────────┬───────────────────────────────┤
+│ Summary cards │                               │
+│ • Top areas   │         RISK MAP              │
+│ • # High risk │                               │
+│ • Weekly Δ    │   [ time slider: +1 +2 +4 ]   │
+├───────────────┴───────────────────────────────┤
 │  Area detail: forecast chart | weather drivers│
-└──────────────────────────────────────────────┘
+└───────────────────────────────────────────────┘
 ```
 
 ## Conflicts with `docs/DATA_MODEL.md` (team to resolve)
