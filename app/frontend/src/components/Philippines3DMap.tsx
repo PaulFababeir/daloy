@@ -21,6 +21,7 @@ export interface Philippines3DMapProps {
   rainfallIntensity?: number; // 0 to 1200 mm
   predictedCases?: number;
   theme?: 'light' | 'dark';
+  paused?: boolean;
 }
 
 const DARK_GRAY_SHADES = [0x1E293B, 0x1E293B, 0x243244, 0x2C3B4E];
@@ -33,7 +34,8 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
   inspectedCity,
   rainfallIntensity = 430,
   predictedCases = 270,
-  theme = 'dark'
+  theme = 'dark',
+  paused = false
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -60,6 +62,8 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
   riversEnabledRef.current = riversEnabled;
   const rainfallRef = useRef<number>(rainfallIntensity);
   rainfallRef.current = rainfallIntensity;
+  const pausedRef = useRef<boolean>(paused);
+  pausedRef.current = paused;
 
   // Camera orbit state
   const cameraTargetRef = useRef<{
@@ -353,6 +357,9 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
     const animate = () => {
       animId = requestAnimationFrame(animate);
 
+      // Pause WebGL render loop while full-screen modal overlays are active
+      if (pausedRef.current) return;
+
       const o = orbitRef.current;
       o.currentTheta += (o.theta - o.currentTheta) * 0.12;
       o.currentPhi += (o.phi - o.currentPhi) * 0.12;
@@ -404,6 +411,7 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
     let dragDist = 0;
     let prevX = 0;
     let prevY = 0;
+    let lastRaycastTime = 0;
 
     const onMouseDown = (e: MouseEvent) => {
       isDragging = true;
@@ -414,6 +422,8 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
     };
 
     const onMouseMove = (e: MouseEvent) => {
+      if (pausedRef.current) return;
+
       if (isDragging) {
         const dx = e.clientX - prevX;
         const dy = e.clientY - prevY;
@@ -435,10 +445,25 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
         return;
       }
 
+      // Skip 3D raycasting whenever mouse is over HUD cards or modals instead of the canvas
+      if (e.target !== canvas) {
+        if (hoveredCityNameRef.current !== null) {
+          hoveredCityNameRef.current = null;
+          canvas.style.cursor = 'grab';
+          setHoveredCity(null);
+          syncCityAppearance();
+        }
+        return;
+      }
+
       // Update tooltip DOM coordinates directly without React state re-render
       if (tooltipElRef.current) {
         tooltipElRef.current.style.transform = `translate3d(${e.clientX}px, ${e.clientY - 14}px, 0) translate(-50%, -100%)`;
       }
+
+      const now = performance.now();
+      if (now - lastRaycastTime < 24) return;
+      lastRaycastTime = now;
 
       const rect = canvas.getBoundingClientRect();
       mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;

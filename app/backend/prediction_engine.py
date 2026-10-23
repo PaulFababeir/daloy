@@ -8,9 +8,16 @@ Supports:
   - CSV validation and rank correlation for user-uploaded city datasets
 """
 
+import csv
 import math
+from pathlib import Path
 from typing import Dict, List, Optional, Any
 
+from dataset.dengue.main import dengue_model
+from dataset.leptos.main import leptos_model
+
+
+BASE_DIR = Path(__file__).resolve().parent
 
 MONTHS = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -50,6 +57,8 @@ class DaloyEngine:
                 'coef': {'b0': math.log(170), 'b1': 0.42},
                 'inputs': [
                     "This month's rainfall (mm), as log(1 + rain), standardized",
+                    "Last month's rainfall (mm), as log(1 + rain), standardized",
+                    'Calendar month, as sin(2πm/12) and cos(2πm/12)',
                 ],
                 'mu': 0.0,
                 'sdv': 1.0,
@@ -77,9 +86,69 @@ class DaloyEngine:
 
     def _build_history(self, key: str) -> List[Dict[str, Any]]:
         cfg = self.config[key]
+        rows: List[Dict[str, Any]] = []
+
+        try:
+            if key == 'dengue':
+                csv_path = BASE_DIR / 'dataset' / 'dengue' / 'qc_dengue_monthly.csv'
+                if csv_path.exists():
+                    with open(csv_path, 'r', encoding='utf-8-sig') as f:
+                        reader = csv.DictReader(f)
+                        for r in reader:
+                            yr = int(float(r['YR']))
+                            mn = int(float(r['MN']))
+                            cases = int(round(float(r['DC_QC'])))
+                            rain = round(float(r['RF_NASA']), 1)
+                            n_weeks = int(float(r.get('n_weeks', 4)))
+                            rows.append({
+                                'year': yr,
+                                'month': mn,
+                                'rain': rain,
+                                'nWeeks': n_weeks,
+                                'prev': None,
+                                'cases': cases
+                            })
+            elif key == 'lepto':
+                csv_path = BASE_DIR / 'dataset' / 'leptos' / 'manila_lepto_monthly.csv'
+                if csv_path.exists():
+                    with open(csv_path, 'r', encoding='utf-8-sig') as f:
+                        reader = csv.DictReader(f)
+                        for r in reader:
+                            parts = r['month'].strip().split('-')
+                            yr = int(parts[0])
+                            mn = int(parts[1])
+                            cases = int(round(float(r['lepto'])))
+                            rain = round(float(r['rain_total_mm']), 1)
+                            n_weeks = int(float(r.get('n_weeks', 4)))
+                            rows.append({
+                                'year': yr,
+                                'month': mn,
+                                'rain': rain,
+                                'nWeeks': n_weeks,
+                                'prev': None,
+                                'cases': cases
+                            })
+        except Exception:
+            rows = []
+
+        if rows:
+            rows.sort(key=lambda d: (d['year'], d['month']))
+            for i in range(len(rows)):
+                if i > 0 and (rows[i]['year'] * 12 + rows[i]['month']) - (rows[i - 1]['year'] * 12 + rows[i - 1]['month']) == 1:
+                    rows[i]['prev'] = rows[i - 1]['rain']
+                else:
+                    rows[i]['prev'] = rows[i - 1]['rain'] if i > 0 else None
+
+            logs = [math.log1p(max(0.0, d['rain'])) for d in rows]
+            mu = sum(logs) / len(logs)
+            sdv = math.sqrt(sum((v - mu) ** 2 for v in logs) / len(logs)) or 1.0
+            cfg['mu'] = mu
+            cfg['sdv'] = sdv
+            return [d for d in rows if d['prev'] is not None]
+
+        # Synthetic fallback if CSV files are missing
         r = mulberry32(cfg['seed'])
         n_weeks_pattern = [5, 4, 4, 4, 5, 4, 5, 4, 4, 5, 4, 5]
-        rows = []
         for y in range(cfg['years'][0], cfg['years'][1] + 1):
             for m in range(1, 13):
                 rain = max(0.0, RAIN_SHAPE[m - 1] * math.exp(gauss(r) * 0.55))
@@ -91,7 +160,7 @@ class DaloyEngine:
                     'prev': None,
                     'cases': 0
                 })
-        
+
         for i in range(len(rows)):
             rows[i]['prev'] = rows[i - 1]['rain'] if i > 0 else None
 
@@ -101,35 +170,51 @@ class DaloyEngine:
         cfg['mu'] = mu
         cfg['sdv'] = sdv
 
-        usable = [d for d in rows if d['prev'] is not None] if key == 'lepto' else rows
+        usable = [d for d in rows if d['prev'] is not None]
         for d in usable:
-            expected = self.predict_raw(key, d['rain'], d['prev'], d['month'], d['nWeeks'])
+            expected = self._fallback_predict(key, d['rain'], d['prev'], d['month'], d['nWeeks'])
             d['cases'] = max(0, round(expected * math.exp(gauss(r) * 0.3)))
         return usable
 
-    def predict_raw(self, key: str, rain: float, prev: Optional[float], month: int, n_weeks: int = 4) -> float:
+    def _fallback_predict(self, key: str, rain: float, prev: Optional[float], month: int, n_weeks: int = 4) -> float:
         cfg = self.config[key]
         def z(v):
             return (math.log1p(max(0.0, v if v is not None else 0.0)) - cfg['mu']) / cfg['sdv']
 
         if key == 'dengue':
             return math.exp(cfg['coef']['b0'] + cfg['coef']['b1'] * z(rain))
-        
-        if key == 'lepto':
-            try:
-                from dataset.leptos.main import leptos_model
-                p_val = prev if prev is not None else rain
-                res = leptos_model(rain, p_val, month)
-                if isinstance(res, list) and len(res) > 0:
-                    return float(res[0])
-            except Exception:
-                pass
-        
+
         ang = (2.0 * math.pi * month) / 12.0
         c = cfg['coef']
         p_val = prev if prev is not None else rain
         rate = math.exp(c['a'] + c['bc'] * z(rain) + c['bp'] * z(p_val) + c['bs'] * math.sin(ang) + c['bcs'] * math.cos(ang))
         return max(0.0, rate * (n_weeks or 4))
+
+    def predict_raw(self, key: str, rain: float, prev: Optional[float], month: int, n_weeks: int = 4) -> float:
+        p_val = prev if prev is not None else rain
+        month_name = MONTHS[int(month) - 1] if isinstance(month, int) or str(month).isdigit() else str(month)
+
+        if key == 'dengue':
+            try:
+                res = dengue_model(float(rain), float(p_val), month_name)
+                arr = res.tolist() if hasattr(res, 'tolist') else list(res)
+                if len(arr) > 0:
+                    return float(arr[0])
+            except Exception:
+                pass
+            return self._fallback_predict(key, rain, prev, int(month), n_weeks)
+
+        if key == 'lepto':
+            try:
+                res = leptos_model(float(rain), float(p_val), month_name)
+                arr = res.tolist() if hasattr(res, 'tolist') else list(res)
+                if len(arr) > 0:
+                    return float(arr[0])
+            except Exception:
+                pass
+            return self._fallback_predict(key, rain, prev, int(month), n_weeks)
+
+        return self._fallback_predict(key, rain, prev, int(month), n_weeks)
 
     def baseline_for(self, key: str, month: int) -> float:
         subset = [d['cases'] for d in self.history[key] if d['month'] == month]
@@ -154,12 +239,9 @@ class DaloyEngine:
             return (math.log1p(max(0.0, v if v is not None else 0.0)) - cfg['mu']) / cfg['sdv']
 
         def feat(d_rain, d_prev, d_month):
-            f = [z(d_rain)]
-            if key == 'lepto':
-                a = (2.0 * math.pi * d_month) / 12.0
-                p_v = d_prev if d_prev is not None else d_rain
-                f.extend([z(p_v), math.sin(a) * 0.8, math.cos(a) * 0.8])
-            return f
+            a = (2.0 * math.pi * d_month) / 12.0
+            p_v = d_prev if d_prev is not None else d_rain
+            return [z(d_rain), z(p_v), math.sin(a) * 0.8, math.cos(a) * 0.8]
 
         q = feat(rain, prev, month)
         results = []

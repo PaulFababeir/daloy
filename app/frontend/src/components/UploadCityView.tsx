@@ -3,14 +3,29 @@ import { UploadCloud, FileText, CheckCircle, AlertCircle, Download, Copy, Refres
 
 interface UploadCityViewProps {
   disease: 'dengue' | 'lepto';
+  theme?: 'light' | 'dark';
 }
 
-export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initialDisease }) => {
+export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initialDisease, theme = 'dark' }) => {
   const [disease, setDisease] = useState<'dengue' | 'lepto'>(initialDisease);
   const [file, setFile] = useState<File | null>(null);
   const [validationResult, setValidationResult] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  const isDark = theme === 'dark';
+
+  const cardCls = isDark
+    ? 'bg-slate-900 text-white border-slate-800 shadow-sm'
+    : 'bg-[#FFFDF9] text-stone-900 border-[#E7E1D6] shadow-sm';
+
+  const insetCls = isDark
+    ? 'bg-slate-800/60 text-slate-200 border-slate-800'
+    : 'bg-[#F4EFE6] text-stone-800 border-[#E7E1D6]';
+
+  const headingCls = isDark ? 'text-white' : 'text-stone-900';
+  const mutedCls = isDark ? 'text-slate-400' : 'text-stone-600';
+  const borderCls = isDark ? 'border-slate-800' : 'border-[#E7E1D6]';
 
   const schemas = {
     dengue: {
@@ -175,21 +190,21 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="p-6 rounded-3xl bg-[#FFFDF9] dark:bg-slate-900 border border-[#E7E1D6] dark:border-slate-800 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className={`p-6 rounded-3xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${cardCls}`}>
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-semibold mb-2">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/30 text-xs font-semibold mb-2">
             Experimental Feature
           </div>
-          <h2 className="text-xl font-bold text-stone-900 dark:text-white">
+          <h2 className={`text-xl font-bold ${headingCls}`}>
             Upload Your City Surveillance Data
           </h2>
-          <p className="text-xs text-stone-600 dark:text-slate-400 mt-1 max-w-xl">
+          <p className={`text-xs mt-1 max-w-xl ${mutedCls}`}>
             DALOY is trained on Quezon City and Manila. Upload your local monthly panel (≥ 24 months) to run Leave-One-Year-Out validation or evaluate rainfall-case correlation for your LGU.
           </p>
         </div>
 
         {/* Disease switcher */}
-        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-[#F4EFE6] dark:bg-slate-800 border border-[#E7E1D6]/70 dark:border-transparent">
+        <div className={`flex items-center gap-2 p-1.5 rounded-2xl ${isDark ? 'bg-slate-800' : 'bg-[#F4EFE6] border border-[#E7E1D6]/70'}`}>
           <button
             onClick={() => {
               setDisease('dengue');
@@ -199,7 +214,7 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
               disease === 'dengue'
                 ? 'bg-rose-500 text-white shadow-sm'
-                : 'text-stone-700 dark:text-slate-300 hover:text-stone-900'
+                : isDark ? 'text-slate-300 hover:text-white' : 'text-stone-700 hover:text-stone-900'
             }`}
           >
             Dengue Format
@@ -213,7 +228,7 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
             className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
               disease === 'lepto'
                 ? 'bg-teal-700 text-white shadow-sm'
-                : 'text-stone-700 dark:text-slate-300 hover:text-stone-900'
+                : isDark ? 'text-slate-300 hover:text-white' : 'text-stone-700 hover:text-stone-900'
             }`}
           >
             Lepto Format
@@ -224,8 +239,8 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Schema and Guidelines */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="p-6 rounded-3xl bg-[#FFFDF9] dark:bg-slate-900 border border-[#E7E1D6] dark:border-slate-800 shadow-sm">
-            <h3 className="text-sm font-bold uppercase tracking-wider text-stone-500 dark:text-slate-400 mb-3">
+          <div className={`p-6 rounded-3xl border ${cardCls}`}>
+            <h3 className={`text-sm font-bold uppercase tracking-wider mb-3 ${mutedCls}`}>
               Required CSV Schema ({disease.toUpperCase()})
             </h3>
 
@@ -233,28 +248,36 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
               {schemas[disease].cols.map(c => (
                 <code
                   key={c}
-                  className="px-2.5 py-1 rounded-lg bg-[#F4EFE6] dark:bg-slate-800 text-stone-800 dark:text-slate-200 border border-[#E7E1D6] dark:border-slate-700 text-xs font-mono font-bold"
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold ${insetCls}`}
                 >
                   {c}
                 </code>
               ))}
             </div>
 
-            <p className="text-xs text-stone-600 dark:text-slate-400 mb-4 leading-relaxed">
+            <p className={`text-xs mb-4 leading-relaxed ${mutedCls}`}>
               Files must be in UTF-8 CSV format with non-negative numeric counts. Minimum 24 monthly records required to support cross-validation.
             </p>
 
             <div className="flex items-center gap-3">
               <button
                 onClick={handleDownloadSample}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#F4EFE6] hover:bg-[#ECE5D8] dark:bg-slate-800 dark:hover:bg-slate-700 text-stone-800 dark:text-slate-200 border border-[#E7E1D6] dark:border-slate-700 text-xs font-semibold transition"
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition ${
+                  isDark
+                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                    : 'bg-[#F4EFE6] hover:bg-[#ECE5D8] text-stone-800 border border-[#E7E1D6]'
+                }`}
               >
                 <Download className="w-3.5 h-3.5" />
                 Download Template
               </button>
               <button
                 onClick={handleCopySample}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#F4EFE6] hover:bg-[#ECE5D8] dark:bg-slate-800 dark:hover:bg-slate-700 text-stone-800 dark:text-slate-200 border border-[#E7E1D6] dark:border-slate-700 text-xs font-semibold transition"
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition ${
+                  isDark
+                    ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700'
+                    : 'bg-[#F4EFE6] hover:bg-[#ECE5D8] text-stone-800 border border-[#E7E1D6]'
+                }`}
               >
                 <Copy className="w-3.5 h-3.5" />
                 {copied ? 'Copied!' : 'Copy Sample'}
@@ -265,7 +288,11 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
 
         {/* Right Column: Upload Zone and Live Analysis */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="p-8 rounded-3xl bg-[#F4EFE6]/60 dark:bg-slate-900 border-2 border-dashed border-[#DBD4C8] hover:border-stone-500 dark:border-slate-700 dark:hover:border-teal-500 text-center relative transition">
+          <div className={`p-8 rounded-3xl border-2 border-dashed text-center relative transition ${
+            isDark
+              ? 'bg-slate-900 border-slate-700 hover:border-teal-500'
+              : 'bg-[#F4EFE6]/60 border-[#DBD4C8] hover:border-stone-500'
+          }`}>
             <input
               type="file"
               accept=".csv"
@@ -273,49 +300,57 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
             <div className="flex flex-col items-center justify-center pointer-events-none">
-              <div className="p-4 rounded-full bg-[#EBE4D8] dark:bg-teal-950/60 text-stone-700 dark:text-teal-400 mb-3">
+              <div className={`p-4 rounded-full mb-3 ${
+                isDark ? 'bg-teal-950/60 text-teal-400' : 'bg-[#EBE4D8] text-stone-700'
+              }`}>
                 <UploadCloud className="w-8 h-8" />
               </div>
-              <p className="text-sm font-bold text-stone-800 dark:text-slate-200">
+              <p className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-stone-800'}`}>
                 {file ? file.name : 'Drop your city CSV here or click to browse'}
               </p>
-              <p className="text-xs text-stone-500 dark:text-slate-400 mt-1">
+              <p className={`text-xs mt-1 ${mutedCls}`}>
                 CSV format only · Maximum 10MB
               </p>
             </div>
           </div>
 
           {isLoading && (
-            <div className="flex items-center justify-center p-6 rounded-2xl bg-[#FFFDF9] dark:bg-slate-900 border border-[#E7E1D6] dark:border-slate-800 text-stone-600 dark:text-slate-400 gap-2 text-sm">
-              <RefreshCw className="w-4 h-4 animate-spin text-stone-700 dark:text-teal-400" />
-              Validating schema and computing correlation...
+            <div className={`flex items-center justify-center p-6 rounded-2xl border gap-2 text-sm ${cardCls}`}>
+              <RefreshCw className={`w-4 h-4 animate-spin ${isDark ? 'text-teal-400' : 'text-stone-700'}`} />
+              <span className={mutedCls}>Validating schema and computing correlation...</span>
             </div>
           )}
 
           {validationResult && (
-            <div className="p-6 rounded-3xl bg-[#FFFDF9] dark:bg-slate-900 border border-[#E7E1D6] dark:border-slate-800 shadow-sm space-y-6">
-              <div className="flex items-center justify-between pb-4 border-b border-[#E7E1D6] dark:border-slate-800">
+            <div className={`p-6 rounded-3xl border space-y-6 ${cardCls}`}>
+              <div className={`flex items-center justify-between pb-4 border-b ${borderCls}`}>
                 <div className="flex items-center gap-2.5">
                   {validationResult.valid ? (
                     <CheckCircle className="w-5 h-5 text-emerald-600" />
                   ) : (
                     <AlertCircle className="w-5 h-5 text-rose-600" />
                   )}
-                  <h4 className="text-base font-bold text-stone-900 dark:text-white">
+                  <h4 className={`text-base font-bold ${headingCls}`}>
                     {validationResult.valid ? 'File Validated Successfully' : 'Validation Issues Detected'}
                   </h4>
                 </div>
-                <span className="text-xs font-mono font-bold text-stone-600 dark:text-slate-500">
+                <span className={`text-xs font-mono font-bold ${mutedCls}`}>
                   {validationResult.row_count} monthly rows parsed
                 </span>
               </div>
 
               {validationResult.errors && validationResult.errors.length > 0 && (
-                <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 space-y-2">
-                  <span className="text-xs font-bold text-rose-800 dark:text-rose-300">
+                <div className={`p-4 rounded-2xl border space-y-2 ${
+                  isDark
+                    ? 'bg-rose-950/40 border-rose-800 text-rose-300'
+                    : 'bg-rose-50 border-rose-200 text-rose-800'
+                }`}>
+                  <span className="text-xs font-bold">
                     Fix the following:
                   </span>
-                  <ul className="list-disc list-inside text-xs text-rose-700 dark:text-rose-400 space-y-1">
+                  <ul className={`list-disc list-inside text-xs space-y-1 ${
+                    isDark ? 'text-rose-400' : 'text-rose-700'
+                  }`}>
                     {validationResult.errors.map((err: string, i: number) => (
                       <li key={i}>{err}</li>
                     ))}
@@ -326,40 +361,40 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
               {validationResult.valid && (
                 <>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                    <div className="p-4 rounded-2xl bg-[#F4EFE6] dark:bg-slate-800/60 border border-[#E7E1D6] dark:border-slate-800">
-                      <span className="text-xs text-stone-600 dark:text-slate-400">Spearman Rank ρ</span>
-                      <div className="text-xl font-extrabold font-mono text-stone-900 dark:text-teal-400 mt-1">
+                    <div className={`p-4 rounded-2xl border ${insetCls}`}>
+                      <span className={`text-xs ${mutedCls}`}>Spearman Rank ρ</span>
+                      <div className={`text-xl font-extrabold font-mono mt-1 ${isDark ? 'text-teal-400' : 'text-stone-900'}`}>
                         +{validationResult.spearman_rho}
                       </div>
-                      <span className="text-[10px] text-stone-500 dark:text-slate-400">Rain-case correlation</span>
+                      <span className="text-[10px] opacity-75">Rain-case correlation</span>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-[#F4EFE6] dark:bg-slate-800/60 border border-[#E7E1D6] dark:border-slate-800">
-                      <span className="text-xs text-stone-600 dark:text-slate-400">Mean Monthly Rain</span>
-                      <div className="text-xl font-extrabold font-mono text-stone-900 dark:text-slate-200 mt-1">
+                    <div className={`p-4 rounded-2xl border ${insetCls}`}>
+                      <span className={`text-xs ${mutedCls}`}>Mean Monthly Rain</span>
+                      <div className={`text-xl font-extrabold font-mono mt-1 ${isDark ? 'text-slate-200' : 'text-stone-900'}`}>
                         {validationResult.summary?.mean_rainfall} mm
                       </div>
-                      <span className="text-[10px] text-stone-500 dark:text-slate-400">Local climate baseline</span>
+                      <span className="text-[10px] opacity-75">Local climate baseline</span>
                     </div>
 
-                    <div className="p-4 rounded-2xl bg-[#F4EFE6] dark:bg-slate-800/60 border border-[#E7E1D6] dark:border-slate-800 col-span-2 sm:col-span-1">
-                      <span className="text-xs text-stone-600 dark:text-slate-400">Total Cases Reported</span>
-                      <div className="text-xl font-extrabold font-mono text-stone-900 dark:text-slate-200 mt-1">
+                    <div className={`p-4 rounded-2xl border col-span-2 sm:col-span-1 ${insetCls}`}>
+                      <span className={`text-xs ${mutedCls}`}>Total Cases Reported</span>
+                      <div className={`text-xl font-extrabold font-mono mt-1 ${isDark ? 'text-slate-200' : 'text-stone-900'}`}>
                         {validationResult.summary?.total_cases?.toLocaleString()}
                       </div>
-                      <span className="text-[10px] text-stone-500 dark:text-slate-400">Across dataset</span>
+                      <span className="text-[10px] opacity-75">Across dataset</span>
                     </div>
                   </div>
 
                   {/* 5-row preview table */}
                   {validationResult.preview && validationResult.preview.length > 0 && (
                     <div>
-                      <span className="text-xs font-bold uppercase tracking-wider text-stone-500 dark:text-slate-400 block mb-2">
+                      <span className={`text-xs font-bold uppercase tracking-wider block mb-2 ${mutedCls}`}>
                         Data Preview (First 5 Rows)
                       </span>
-                      <div className="overflow-x-auto rounded-xl border border-[#E7E1D6] dark:border-slate-800">
+                      <div className={`overflow-x-auto rounded-xl border ${borderCls}`}>
                         <table className="w-full text-left text-xs font-mono">
-                          <thead className="bg-[#F4EFE6] dark:bg-slate-800 text-stone-700 dark:text-slate-300">
+                          <thead className={isDark ? 'bg-slate-800 text-slate-300' : 'bg-[#F4EFE6] text-stone-700'}>
                             <tr>
                               {Object.keys(validationResult.preview[0]).map(k => (
                                 <th key={k} className="p-2.5 font-bold">
@@ -368,11 +403,11 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
                               ))}
                             </tr>
                           </thead>
-                          <tbody className="divide-y divide-[#E7E1D6] dark:divide-slate-800">
+                          <tbody className={`divide-y ${borderCls}`}>
                             {validationResult.preview.map((row: any, idx: number) => (
-                              <tr key={idx} className="hover:bg-[#F9F6F0] dark:hover:bg-slate-800/50">
+                              <tr key={idx} className={isDark ? 'hover:bg-slate-800/50' : 'hover:bg-[#F9F6F0]'}>
                                 {Object.values(row).map((v: any, j: number) => (
-                                  <td key={j} className="p-2.5 text-stone-800 dark:text-slate-300">
+                                  <td key={j} className={`p-2.5 ${isDark ? 'text-slate-300' : 'text-stone-800'}`}>
                                     {String(v)}
                                   </td>
                                 ))}
