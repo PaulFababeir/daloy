@@ -4,6 +4,35 @@
 
 Draft UI concept for a web app that predicts leptospirosis and dengue risk from meteorological data.
 
+## Production stack: React + Three.js + FastAPI (`app/frontend/` & `app/backend/`)
+
+Modernized on 2026-10-23 by Ivanne into a decoupled production tech stack:
+- **Frontend (`app/frontend/`):** React 19, Vite, Tailwind CSS, Lucide icons, Three.js 3D Philippine archipelago map with monsoon rainfall particle dynamics and interactive outbreak beacons (Quezon City & Manila).
+- **Backend (`app/backend/`):** FastAPI, Uvicorn, Pydantic, scientific computing engine (Poisson regression prediction, nearest-neighbor historical month similarity, LGU flood hazard query, and custom CSV validation).
+- **Dual-mode architecture:** Automatic fallback ensures the frontend operates seamlessly offline or during backend restarts.
+
+## Prototype implementation: `DALOY` (`app/daloy-ui/`)
+
+Implemented on 2026-10-23 by Ivanne as a standalone, zero-dependency HTML/CSS/JS interactive prototype in `app/daloy-ui/` (`index.html`, `styles.css`, `app.js`):
+
+- **Proposed app name:** **DALOY** (*"Trace the rain, target the outbreak"* — Tagalog for *flow/current*). Pending final team confirmation.
+- **Navigation (3 top-level views):**
+  1. **Case estimate (`#view-predict` — Finalized Feature 1):**
+     - **Disease & city switcher:** Segmented toggle between **Dengue · Quezon City** (`2010–2025`, `PoissonRegressor(alpha=0.1)`) and **Leptospirosis · Manila** (`2001–2012`, `HistGradientBoostingRegressor(loss="poisson")`).
+     - **Scenario inputs:** Calendar month selector (`Jan–Dec`), current-month total rainfall slider + numeric input (`0–1,200 mm`) + scenario quick-chips (*Dry month*, *Typical for month*, *Very wet (450 mm)*, *Typhoon month (650 mm)*). When Leptospirosis is active, unlocks **Rainfall last month (`mm`)** and **Case weeks in this month (`n_weeks` = 4 or 5)**. Includes a collapsible *"What the model actually uses"* formula drawer.
+     - **Expected Monthly Cases card:** Displays predicted monthly cases (`Math.round(y_hat)`), an approximate 95% Poisson interval (`[y_hat ± 1.96 * sqrt(y_hat)]`), a horizontal comparison bar against the historical monthly average (other-years mean baseline), a relative status badge (`Near typical` / `Above typical` / `Well above typical`), and a plain-language **"Why this number"** box (+100 mm effect-size statement for Dengue; two-month cumulative rainfall + seasonal context for Leptospirosis).
+     - **Most Similar Past Month card:** Ranks historical months by normalized Euclidean distance in feature space (`log(1 + rain)` + seasonal proximity for Dengue; current + previous month `log(1 + rain)` + circular month distance for Leptospirosis) and displays the #1 closest historical month/year, rainfall then, actual reported cases then, and the next 3 closest past months.
+     - **Interactive SVG Scatter + Model Curve chart:** Plots historical monthly observations, highlights same-calendar-month points, draws the model response curve across `0–900 mm` rainfall, and pins both **Your input** and the **Most similar past month**.
+     - **Flood-Vulnerable Areas within the City card:** Displays an interactive barangay flood-susceptibility map placeholder + ranked high-risk zones for Quezon City (Tatalon, Bagong Silangan, Roxas District, Doña Imelda, Batasan Hills) and Manila (Sampaloc, Tondo I/II, Ermita–Taft, Santa Ana, Paco) with an explicit `Data source pending` badge (awaiting UP NOAH / MGB shapefile integration).
+     - **Suggested LGU & Hospital Actions card:** Pairs the estimate with disease-specific operational checklists (4S clean-up, NS1/ORS stock check, fast lanes for Dengue; doxycycline prophylaxis, flood-wading advisory, dialysis/ICU readiness for Leptospirosis), tagged `Pending team confirmation`.
+  2. **Your city (`#view-upload` — Finalized Feature 2, `[Experimental]`):**
+     - 4-step guided workflow (*1. Choose disease* → *2. Upload CSV* → *3. Check file* → *4. Results*).
+     - Shows the exact required CSV schema from `docs/DATA_MODEL.md` (`YR,MN,DC_QC,RF_NASA,n_weeks` for Dengue; `month,lepto,rain_total_mm,n_weeks` for Leptospirosis) with a one-click copy button, downloadable CSV template, and built-in sample data loader.
+     - Mode toggle between **Retrain on my city (LOYO-CV)** and **Apply DALOY's trained model**, with a clear scope warning that models trained on QC/Manila may not transfer without local retraining.
+     - Live client-side CSV validator (checks exact column headers, blank cells, numeric non-negative counts/rainfall, valid months/dates, and $\ge 24$ months for LOYO-CV), 5-row data preview table, and instant Spearman $\rho$ correlation + scatter plot.
+  3. **Method & data (`#view-method`):**
+     - Visualizes the 4-step pipeline (*Collect → Aggregate → Model → Validate*), side-by-side model cards, Leave-One-Year-Out CV metric comparison table (`[TBD — awaiting final run]`), key limitations, next steps, and APA 7th references.
+
 ## Finalized features (team meeting, 2026-10-23)
 
 **These override anything later in this file that conflicts with them.** The sections after this one are the earlier draft concept.

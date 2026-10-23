@@ -19,7 +19,10 @@ No team captain.
 | Proposal | All |
 
 ## Ivanne (UI, demo, proposal)
-- Doing: UI design (spec now in docs/UI_SPEC.md).
+- Done: Built interactive HTML/CSS/JS web app prototype **`DALOY`** (`app/daloy-ui/index.html`, `styles.css`, `app.js`) implementing all finalized 2026-10-23 features (QC Dengue & Manila Leptospirosis monthly case prediction, most similar past month lookup, city flood-vulnerable areas view, experimental multi-city CSV uploader + live validator, and methodology/LOYO-CV transparency view).
+- Done: Migrated **`DALOY`** to a modern production stack in `app/frontend/` (React + Vite + Tailwind CSS + Three.js) and `app/backend/` (FastAPI + Uvicorn) featuring an interactive 3D Philippine archipelago map with real-time monsoon rainfall particle simulation, interactive city beacons (Quezon City & Manila), dual-mode API/offline client fallback, and all finalized prediction/upload/methodology views.
+- Done: Verified official PJDSC 2026 Primer/FAQ rules and found exact APA 7th citations for the DOH Sept 2025 leptospirosis figures and NKTI Aug 2025 ward story hook (documented in `docs/PROPOSAL_HANDOFF.md`).
+- Next: Wire final trained model coefficients / LOYO-CV metrics from JD/JP/Paul and UP NOAH/MGB flood susceptibility layer into the FastAPI backend and React frontend.
 
 ## Diego (UI, demo, proposal)
 - Doing: UI design (spec now in docs/UI_SPEC.md).
