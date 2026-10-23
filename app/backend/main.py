@@ -38,8 +38,8 @@ class PredictFeatures(BaseModel):
     curr_month_rainfall: float
     prev_month_rainfall: float
     month: str
-    experimental: bool
-    city: str
+    experimental: bool = False
+    city: str | None = None
 
 
 class PredictRequest(BaseModel):
