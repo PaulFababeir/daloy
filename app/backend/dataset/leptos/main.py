@@ -1,13 +1,16 @@
 import numpy as np
 import pandas as pd
+from pathlib import Path
 from datetime import datetime
 from sklearn.ensemble import HistGradientBoostingRegressor
 
+BASE_DIR = Path(__file__).resolve().parent
+csv_path = BASE_DIR / "manila_lepto_monthly.csv"
 
 def leptos_model(curr_month_rain, prev_month_rain, month):
-    df = pd.read_csv("manila_lepto_monthly.csv", parse_dates=["month"]).sort_values("month")
+    df = pd.read_csv(csv_path, parse_dates=["month"]).sort_values("month")
     df = df.reset_index(drop=True)
-
+    
     df["rain_prev_month"] = df["rain_total_mm"].shift(1)
     df["log_rain"] = np.log1p(df["rain_total_mm"])
     df["log_rain_prev"] = np.log1p(df["rain_prev_month"])
@@ -15,7 +18,7 @@ def leptos_model(curr_month_rain, prev_month_rain, month):
     df["month_sin"] = np.sin(2 * np.pi * m / 12)
     df["month_cos"] = np.cos(2 * np.pi * m / 12)
     df["rate"] = df["lepto"] / df["n_weeks"]           
-
+    
     FEATURES = ["log_rain", "log_rain_prev", "month_sin", "month_cos"]  
     df = df.dropna(subset=FEATURES + ["rate"])
 

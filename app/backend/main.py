@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from dataset.leptos.main import leptos_model
+from dataset.dengue.main import dengue_model
 import math
 import csv
 import io
@@ -31,7 +32,7 @@ app.add_middleware(
 )
 
 
-class LeptosPredictFeatures(BaseModel):
+class PredictFeatures(BaseModel):
     curr_month_rainfall: float
     prev_month_rainfall: float
     month: str
@@ -68,10 +69,21 @@ class PredictResponse(BaseModel):
     flood_zones: List[Dict[str, Any]]
 
 
+@app.get("/")
+def test():
+    return {"message":"hello"}
+
 @app.get("/api/predict/leptos")
-def predict_leptos(features: LeptosPredictFeatures):
-    return leptos_model(features.curr_month_rainfall, features.prev_month_rainfall, features.month)
+def predict_leptos(features: PredictFeatures):
+
+    cases = leptos_model(features.curr_month_rainfall, features.prev_month_rainfall, features.month)
+    return {"cases": cases.tolist()}
     
+@app.get("/api/predict/dengue")
+def predict_leptos(features: PredictFeatures):
+    cases = dengue_model(features.curr_month_rainfall, features.prev_month_rainfall, features.month)
+    return {"cases": cases.tolist()}
+
 @app.get("/api/health")
 def health_check():
     return {
