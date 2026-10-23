@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from dataset.leptos.main import leptos_model
+from dataset.dengue.main import dengue_model
 import math
 import csv
 import io
@@ -31,18 +32,19 @@ app.add_middleware(
 )
 
 
-class LeptosPredictFeatures(BaseModel):
+class PredictFeatures(BaseModel):
     curr_month_rainfall: float
     prev_month_rainfall: float
     month: str
-    
+
 
 class PredictRequest(BaseModel):
     disease: str = Field(..., description="'dengue' or 'lepto'")
     month: int = Field(..., ge=1, le=12, description="Month 1-12")
     rain: float = Field(..., ge=0, description="Monthly rainfall in mm")
     prev_rain: Optional[float] = Field(None, ge=0, description="Previous month rainfall in mm")
-    n_weeks: Optional[int] = Field(4, ge=4, le=5, description="Case weeks in month")    
+    n_weeks: Optional[int] = Field(4, ge=4, le=5, description="Case weeks in month")
+
 
 class PredictResponse(BaseModel):
     disease: str
@@ -66,24 +68,25 @@ class PredictResponse(BaseModel):
     similar_months: List[Dict[str, Any]]
     actions: List[Dict[str, str]]
     flood_zones: List[Dict[str, Any]]
+    history_points: Optional[List[Dict[str, Any]]] = None
 
 
-@app.post("/api/predict/leptos")
-def predict_leptos_post(features: LeptosPredictFeatures):
-    """Predict monthly leptospirosis cases in Manila using HistGradientBoostingRegressor model (POST with JSON)."""
-    res = leptos_model(features.curr_month_rainfall, features.prev_month_rainfall, features.month)
-    return res if isinstance(res, list) else [float(res)]
+@app.get("/")
+def test():
+    return {"message": "hello"}
 
 
-@app.get("/api/predict/leptos")
-def predict_leptos_get(
-    curr_month_rainfall: float = 150.0,
-    prev_month_rainfall: float = 60.0,
-    month: str = "March"
-):
-    """Predict monthly leptospirosis cases via GET query parameters."""
-    res = leptos_model(curr_month_rainfall, prev_month_rainfall, month)
-    return res if isinstance(res, list) else [float(res)]
+@app.api_route("/api/predict/leptos", methods=["GET", "POST"])
+def predict_leptos(features: PredictFeatures):
+    cases = leptos_model(features.curr_month_rainfall, features.prev_month_rainfall, features.month)
+    return {"cases": cases.tolist()}
+
+
+@app.api_route("/api/predict/dengue", methods=["GET", "POST"])
+def predict_dengue(features: PredictFeatures):
+    cases = dengue_model(features.curr_month_rainfall, features.prev_month_rainfall, features.month)
+    return {"cases": cases.tolist()}
+
 
 @app.get("/api/health")
 def health_check():
@@ -101,14 +104,14 @@ def predict(req: PredictRequest):
     key = req.disease.lower()
     if key not in ("dengue", "lepto"):
         raise HTTPException(status_code=400, detail="Disease must be 'dengue' or 'lepto'")
-    
+
     cfg = engine.config[key]
     n_weeks = req.n_weeks or 4
     prev = req.prev_rain if req.prev_rain is not None else req.rain
 
     raw_pred = engine.predict_raw(key, req.rain, prev, req.month, n_weeks)
     cases = max(0, round(raw_pred))
-    
+
     # 95% Poisson Interval
     margin = 1.96 * math.sqrt(raw_pred) if raw_pred > 0 else 0
     ci_lo = max(0, round(raw_pred - margin))
@@ -122,15 +125,16 @@ def predict(req: PredictRequest):
 
     # Contextual explanation strings
     t_rain = engine.typical_rain(key, req.month)
+    t_prev = engine.typical_rain(key, 12 if req.month == 1 else req.month - 1)
     m_name = MONTHS[req.month - 1]
     rain_cmp = "more" if req.rain > t_rain * 1.15 else "less" if req.rain < t_rain * 0.85 else "about the same"
 
     if key == "dengue":
         why_text = (
-            f"{round(req.rain):,} mm is "
-            f"{'about the usual' if rain_cmp == 'about the same' else rain_cmp + ' than the usual'} "
-            f"{m_name} rainfall in {cfg['city']} (median {round(t_rain):,} mm). "
-            "In the model, more rain in a month correlates with more dengue cases that month."
+            f"This month: {round(req.rain):,} mm ({'about the usual' if rain_cmp == 'about the same' else rain_cmp + ' than the usual'} "
+            f"{m_name} median of {round(t_rain):,} mm in {cfg['city']}). "
+            f"Last month: {round(prev):,} mm (median {round(t_prev):,} mm). "
+            "Both months' rainfall and seasonal cycle drive Aedes larval habitat proliferation."
         )
         up_pred = engine.predict_raw(key, req.rain + 100, prev, req.month, n_weeks)
         eff_pct = round((up_pred / raw_pred - 1.0) * 100) if raw_pred > 0 else 0
@@ -139,7 +143,6 @@ def predict(req: PredictRequest):
             f"(≈ {round(up_pred - raw_pred):,} cases)."
         )
     else:
-        t_prev = engine.typical_rain(key, 12 if req.month == 1 else req.month - 1)
         why_text = (
             f"This month: {round(req.rain):,} mm (usual {round(t_rain):,} mm). "
             f"Last month: {round(prev):,} mm (usual {round(t_prev):,} mm). "
@@ -158,7 +161,7 @@ def predict(req: PredictRequest):
         month=req.month,
         month_name=m_name,
         rain=req.rain,
-        prev_rain=prev if key == "lepto" else None,
+        prev_rain=prev,
         n_weeks=n_weeks,
         predicted_cases=cases,
         raw_estimate=round(raw_pred, 2),
@@ -173,7 +176,8 @@ def predict(req: PredictRequest):
         effect_text=effect_text,
         similar_months=sims,
         actions=actions,
-        flood_zones=flood_zones
+        flood_zones=flood_zones,
+        history_points=engine.history[key]
     )
 
 
@@ -210,13 +214,13 @@ async def upload_csv(
     key = disease.lower()
     if key not in ("dengue", "lepto"):
         raise HTTPException(status_code=400, detail="Disease must be 'dengue' or 'lepto'")
-    
+
     contents = await file.read()
     try:
         text = contents.decode("utf-8-sig")
     except UnicodeDecodeError:
         text = contents.decode("latin-1")
-    
+
     reader = csv.reader(io.StringIO(text.strip()))
     rows = list(reader)
     if not rows:
@@ -228,7 +232,7 @@ async def upload_csv(
         if key == 'dengue'
         else ['month', 'lepto', 'rain_total_mm', 'n_weeks']
     )
-    
+
     missing = [c for c in expected_cols if c not in headers]
     if missing:
         return {
@@ -240,7 +244,7 @@ async def upload_csv(
 
     parsed_rows = []
     errors = []
-    
+
     rain_idx = headers.index('RF_NASA' if key == 'dengue' else 'rain_total_mm')
     case_idx = headers.index('DC_QC' if key == 'dengue' else 'lepto')
 
