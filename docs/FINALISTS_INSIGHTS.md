@@ -40,7 +40,7 @@
 | Independent validation | Leave-one-year-out CV vs. baseline | Compare our rainfall–leptospirosis pattern with Matsushita et al. (2018), same city and period |
 | Limitations + roadmap | Not written | Write them (list below) |
 | Reproducible repo | Docs only | README run steps, `requirements.txt`, one script or notebook per model |
-| References | Two papers + datasets | Fix the proposal's reference list (see `docs/PROJECT_BRIEF.md`) |
+| References | Two papers + both datasets in APA (fixed 2026-10-23) | Two story-hook citations still TBD; few local sources compared with 2Ls |
 
 ## Recommendations for the last day (ranked by impact for effort)
 

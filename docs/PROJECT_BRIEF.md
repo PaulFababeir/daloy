@@ -28,7 +28,7 @@
 
 **Pivot:** the team moved away from an earlier idea (diabetes/heart disease risk prediction with facility suggestions) to **estimating dengue and leptospirosis risk from rainfall**.
 
-**Source of truth:** the proposal doc's NEW PROPOSAL tab (link in `docs/LINKS.md`). Its METHODOLOGY section was rewritten by the team on or before 2026-10-23 and is what this brief now follows. The tab's Executive Summary, Objectives, Scope and Appendices still describe the earlier plan; see "Proposal sections that are out of date" below.
+**Source of truth:** the proposal doc's NEW PROPOSAL tab (link in `docs/LINKS.md`). The team rewrote its METHODOLOGY; on 2026-10-23 every other section of the tab was aligned with it. This brief follows the proposal.
 
 ### Pitch
 
@@ -57,15 +57,20 @@ Each estimate comes with suggested actions (pre-positioning doxycycline and IV f
 
 Stretch, only if time allows: a 17-region dengue map from the same UPRI-NOAH workbook's Regional sheet, or a Quezon City barangay hotspot map.
 
-## Proposal sections that are out of date
+## Proposal status (NEW PROPOSAL tab)
 
-As of 2026-10-23, these sections of the NEW PROPOSAL tab still describe the earlier plan and conflict with its own METHODOLOGY:
+Aligned with its METHODOLOGY on 2026-10-23:
 
-- **Executive Summary, Objectives:** province level, weekly forecasts 1–4 weeks ahead, negative-binomial + LightGBM, Normal/Alert/Epidemic tiers, SHAP.
-- **Scope & Limitations:** province level, HDX data, rainfall *trigger* for leptospirosis (it is now a trained model).
-- **Appendices:** explain negative-binomial regression, LightGBM and SHAP. None of these are in the methodology now.
-- **References:** missing the two datasets the methodology uses (EIDC leptospirosis, UPRI-NOAH/Zenodo dengue), and still lists HDX and Mendeley, which it no longer uses. Full APA entries are in `docs/DATA_MODEL.md`.
-- **Placeholders in the Methodology:** `[citation]` (NASA POWER), `[end year]` (2025), `[ISO / epidemiological]` and `[confirm]` (answers in `docs/DATA_MODEL.md`).
+- **Executive Summary, Keywords, Background (2nd paragraph), Objectives, Scope & Limitations:** rewritten for the monthly Manila/Quezon City models, nowcast framing, leave-one-year-out CV and the planned app.
+- **Appendices:** now A. Poisson Regression, B. Gradient Boosting with Poisson Loss, C. Leave-One-Year-Out Cross-Validation.
+- **References:** both datasets added with full APA entries (De Stercke et al., 2023; Pelitro et al., 2026); HDX and Mendeley removed.
+- **Methodology (small factual fixes only):** filled `[citation]`, `[end year]` and `[confirm]`; added in-text dataset citations; updated the leptospirosis dataset's title to its current one; corrected "quality-controlled dengue cases" to "weekly confirmed and probable dengue cases" for `DC_QC`.
+
+Still open in the proposal:
+
+- `[ISO / epidemiological]` week numbering (the team must choose; see `docs/DATA_MODEL.md`).
+- Citations for the DOH 2025 leptospirosis figures and the NKTI leptospirosis ward (both marked "Citation TBD").
+- CV results are not in the proposal yet.
 
 ## Feature priority (impact vs. effort)
 

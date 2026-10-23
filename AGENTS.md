@@ -2,7 +2,7 @@
 
 **Project:** `<project-name>` (name TBD; "Trace the rain, target the outbreak"), the team's PJDSC 2026 entry. It estimates monthly leptospirosis cases in Manila and monthly dengue cases in Quezon City from rainfall, using Poisson models, so LGUs can prepare before surveillance reports (2–3 weeks late) arrive.
 
-**Source of truth for the method:** the proposal doc's NEW PROPOSAL tab, METHODOLOGY section (link in `docs/LINKS.md`). `docs/DATA_MODEL.md` mirrors it. If they disagree, the proposal wins; update `DATA_MODEL.md`.
+**Source of truth:** the proposal doc's **NEW PROPOSAL** tab (link in `docs/LINKS.md`), which is also the proposal deliverable. `docs/DATA_MODEL.md` mirrors its METHODOLOGY section. If they disagree, the proposal wins; update the repo docs. The **NEW METHODOLOGY** tab is the team's reference copy; don't edit it.
 
 **Deadline:** Oct 24, 2026 (confirmed). **Team target: finish by Oct 23, 2026.**
 

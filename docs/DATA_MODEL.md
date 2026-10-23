@@ -1,6 +1,6 @@
 # DATA MODEL
 
-> Datasets, preparation, models and evaluation. **Source of truth: the METHODOLOGY section of the proposal doc's NEW PROPOSAL tab** (link in `docs/LINKS.md`). Synced on 2026-10-23. If the proposal methodology changes, update this file to match (see `AGENTS.md`).
+> Datasets, preparation, models and evaluation. **Source of truth: the METHODOLOGY section of the proposal doc's NEW PROPOSAL tab** (link in `docs/LINKS.md`). Synced on 2026-10-23, after the rest of the proposal was aligned with it. If the proposal methodology changes, update this file to match (see `AGENTS.md`).
 
 ## Summary
 
@@ -25,18 +25,19 @@
 
 - **Cases and rainfall:** UPRI-NOAH dengue-rainfall dataset, file `Dengue_Environmental Vars_Dataset.xlsx`, sheet **QC Data** (Quezon City, 2010–2025, 832 weekly records). The same dataset is on Zenodo as "Weekly Dengue Incidence Linked to Meteorological Variables at City, Regional, and Multi-Setting Scales" (Pelitro et al., 2026, v1.1.0).
 - **Columns kept:** `YR` (year), `WN` (week number), `DC_QC` (weekly confirmed and probable dengue cases, from the Quezon City Epidemiology and Surveillance Division via PIDSR), `RF_NASA` (weekly rainfall).
+  - The `QC` in `DC_QC` means Quezon City, not "quality-controlled" (compare `DC_DOH`, `DC_OPENDENGUE`). The team's original methodology text said "quality-controlled"; the NEW PROPOSAL tab was corrected on 2026-10-23.
 - **Columns dropped:** ERA5-Land and PAGASA variables, quality flags.
 - **Licences:** the GitHub repo states ODC-ODbL v1.0; the Zenodo record states CC BY 4.0. Cite it either way.
 
-Facts from the dataset README that answer `[confirm]` placeholders in the proposal:
+Facts from the dataset README (used to fill the proposal's placeholders on 2026-10-23):
 
 - **`RF_NASA` is already a weekly total** (mm/week, from one 0.1° × 0.1° IMERG cell at the QC centroid). It is not a daily mean, so no conversion is needed.
 - **The end year is 2025.**
-- **Week numbering is ambiguous in the source itself.** The Dataset Summary says the series use continuous 7-day blocks, with rare 53rd blocks folded into week 52. The Data Dictionary calls `WN` an ISO epidemiological week. The dataset README says this "is not fully reconciled". The team must pick one convention and state it.
+- **Week numbering is ambiguous in the source itself.** The Dataset Summary says the series use continuous 7-day blocks, with rare 53rd blocks folded into week 52. The Data Dictionary calls `WN` an ISO epidemiological week. The dataset README says this "is not fully reconciled". The team must pick one convention and state it. **The proposal still has the `[ISO / epidemiological]` placeholder.**
 
 ### Not used in the current methodology
 
-These were in the earlier plan and are still cited in the proposal's References. Remove them there, or keep them only if a section still uses them:
+These were in the earlier plan. They were removed from the proposal's References on 2026-10-23:
 
 - HDX "Philippine Dengue Cases and Deaths" (province level, 2016–2021): the dataset in the official catalogue.
 - Mendeley "Philippine Epidemiological Data" (national leptospirosis cases).
@@ -86,7 +87,7 @@ Candidates tested for each disease: Poisson regression, gradient boosting and ra
 - **Lead time.** Both models use **current-month** rainfall, so they estimate this month's cases from this month's rain. That is a nowcast, not a forecast. It can still warn earlier than surveillance, because rainfall is available within days while case reports arrive about 2–3 weeks late. The proposal and slides should describe it that way. For real lead time, a model would need only past rainfall (e.g. previous month only) or rainfall forecasts as input.
 - **Overdispersion.** Monthly dengue counts usually have variance well above the mean. A Poisson model then understates uncertainty. Check the dispersion; if it is high, report it or compare a negative-binomial model.
 - **Week numbering** for `WN` (see Data sources).
-- **Risk tiers.** The current methodology predicts case counts only. The proposal's Executive Summary and Objectives still describe Normal / Alert / Epidemic tiers (DOH-style thresholds: alert = moving average of the current and preceding 2 years for that period; epidemic = alert + 2 SD). Either define tiers on the monthly predictions or remove them from the proposal.
+- **Risk tiers.** The models predict case counts only, and the proposal no longer mentions tiers. If the app shows a risk level, define it on the monthly predictions and add it to the proposal (one option from the earlier plan: DOH-style thresholds, alert = moving average of the current and preceding 2 years for that period; epidemic = alert + 2 SD).
 
 ## Key evidence (for rationale and citations)
 
@@ -100,7 +101,7 @@ Candidates tested for each disease: Poisson regression, gradient boosting and ra
 - App: Streamlit (planned)
 - Maps and charts: folium and/or plotly (planned)
 
-## References (APA 7th edition)
+## References (APA 7th edition, same as the proposal's list)
 
 - Carvajal, T. M., Viacrusis, K. M., Hernandez, L. F. T., Ho, H. T., Amalin, D. M., & Watanabe, K. (2018). Machine learning methods reveal the temporal pattern of dengue incidence using meteorological factors in metropolitan Manila, Philippines. *BMC Infectious Diseases, 18*(1), 183. https://doi.org/10.1186/s12879-018-3066-0
 - De Stercke, S., Buytaert, W., Mijic, A., Templeton, M., Zulkafli, Z., Ab Rahman, J., Tahir, W., Rahmat, F., Jayaramu, V., Salwa Ibrahim, S., Ismail, M., Juraiza Ishak, A., & Abdul Rahman, R. Z. (2023). *Hydro-epidemiological data for leptospirosis for areas in Brazil, Malaysia, Philippines, Argentina, China and Sri Lanka, 1978-2020* [Data set]. NERC EDS Environmental Information Data Centre. https://doi.org/10.5285/56f42170-3678-4586-b8c8-9b05f03125e1

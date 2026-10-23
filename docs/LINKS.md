@@ -7,8 +7,9 @@
 
 | What | Link | Status | Notes |
 |---|---|---|---|
-| **Proposal doc (Google Docs)** | https://docs.google.com/document/d/14dmCKVEz5Pxl2Q-4OKlkQb8PaN98TtjX07P7dHUOpLg/edit | ✅ | `PJDSC26_anthropos_Proposal`. The current proposal is in the **NEW PROPOSAL** tab. |
-| ↳ NEW PROPOSAL tab (current) | https://docs.google.com/document/d/14dmCKVEz5Pxl2Q-4OKlkQb8PaN98TtjX07P7dHUOpLg/edit?tab=t.lyzugvixxmz4 | ✅ | **Source of truth.** Its METHODOLOGY section drives `docs/DATA_MODEL.md`. Other sections still need aligning (see `docs/PROJECT_BRIEF.md`). |
+| **Proposal doc (Google Docs)** | https://docs.google.com/document/d/14dmCKVEz5Pxl2Q-4OKlkQb8PaN98TtjX07P7dHUOpLg/edit | ✅ | `PJDSC26_anthropos_Proposal`. The deliverable is the **NEW PROPOSAL** tab. |
+| ↳ NEW PROPOSAL tab (deliverable) | https://docs.google.com/document/d/14dmCKVEz5Pxl2Q-4OKlkQb8PaN98TtjX07P7dHUOpLg/edit?tab=t.583vijccrr9j | ✅ | **Source of truth.** All sections aligned with its METHODOLOGY on 2026-10-23. `docs/DATA_MODEL.md` mirrors it. |
+| ↳ NEW METHODOLOGY tab (reference copy) | https://docs.google.com/document/d/14dmCKVEz5Pxl2Q-4OKlkQb8PaN98TtjX07P7dHUOpLg/edit?tab=t.lyzugvixxmz4 | ✅ | The team's methodology as written, before the 2026-10-23 alignment. Was titled "NEW PROPOSAL" until the team duplicated it. Not edited. |
 | ↳ COPY_OF_OLD_METHODOLOGY tab | https://docs.google.com/document/d/14dmCKVEz5Pxl2Q-4OKlkQb8PaN98TtjX07P7dHUOpLg/edit?tab=t.rg158er3tz2b | ✅ | The earlier weekly/province methodology, kept for reference. Superseded. |
 | ↳ OFFICIAL TEMPLATE tab (old proposal) | https://docs.google.com/document/d/14dmCKVEz5Pxl2Q-4OKlkQb8PaN98TtjX07P7dHUOpLg/edit?tab=t.vinjlfs8xbmc | ✅ | The earlier diabetes/heart disease proposal. Use it as the formatting template only. |
 | ↳ Ivanne Draft tab | https://docs.google.com/document/d/14dmCKVEz5Pxl2Q-4OKlkQb8PaN98TtjX07P7dHUOpLg/edit?tab=t.27wgwz57ypoi | ✅ | Empty as of 2026-10-20. |
@@ -51,8 +52,8 @@ Details on each dataset (columns, coverage, caveats) are in `docs/DATA_MODEL.md`
 |---|---|---|---|
 | UPRI-NOAH workbook, Regional sheet | https://github.com/UPRI-NOAH/dengue-rainfall-dataset | ✅ | 17 regions, weekly, 2016–2025 excl. 2020–2021. Could feed a regional map. |
 | Project CCHAIN (barangay-level health + climate, 12 cities, 2003–2022) | https://thinkingmachines.github.io/project-cchain/ | ✅ | From the PJDSC 2025 catalog. Which diseases it covers is unverified. Full data needs a request form. |
-| HDX: Philippine Dengue Cases and Deaths (DOH Epidemiology Bureau) | https://data.humdata.org/dataset/philippine-dengue-cases-and-deaths | ✅ | Earlier plan (province level). Still in the proposal's References; remove if unused. |
-| Mendeley: Philippine Epidemiological Data | https://data.mendeley.com/datasets/v98325dpxv/1 | ✅ | Earlier plan (national leptospirosis). Still in the proposal's References; remove if unused. |
+| HDX: Philippine Dengue Cases and Deaths (DOH Epidemiology Bureau) | https://data.humdata.org/dataset/philippine-dengue-cases-and-deaths | ✅ | Earlier plan (province level). Removed from the proposal's References on 2026-10-23. |
+| Mendeley: Philippine Epidemiological Data | https://data.mendeley.com/datasets/v98325dpxv/1 | ✅ | Earlier plan (national leptospirosis). Removed from the proposal's References on 2026-10-23. |
 | OpenDengue v1.2 | https://opendengue.org/ | ⚠️ | Optional longer dengue history |
 | Project Tycho (PH 1955–2010) | https://www.tycho.pitt.edu/ | ⚠️ | Optional historical data |
 | HDX admin boundaries (Philippines) | https://data.humdata.org/ | ⚠️ | Province shapes for the map. Exact dataset page TBD. |
