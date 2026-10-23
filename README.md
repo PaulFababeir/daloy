@@ -1,6 +1,6 @@
 # `<project-name>`
 
-*Trace the rain, target the outbreak.* The team's PJDSC 2026 entry: dengue and leptospirosis outbreak forecasting from weather data.
+*Trace the rain, target the outbreak.* The team's PJDSC 2026 entry: estimating monthly leptospirosis cases (Manila) and dengue cases (Quezon City) from rainfall.
 
 **Working on this repo with an AI?** Start with [AGENTS.md](AGENTS.md). It has the read order, the update rules, and a starter prompt for browser chat AIs.
 
