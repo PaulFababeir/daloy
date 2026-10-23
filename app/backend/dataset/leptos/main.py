@@ -6,9 +6,14 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 
 BASE_DIR = Path(__file__).resolve().parent
 csv_path = BASE_DIR / "manila_lepto_monthly.csv"
+temp_csv_path = BASE_DIR.parent.parent / "temp_uploads"
 
-def leptos_model(curr_month_rain, prev_month_rain, month):
-    df = pd.read_csv(csv_path, parse_dates=["month"]).sort_values("month")
+def leptos_model(curr_month_rain, prev_month_rain, month, experimental=False, city=None):
+    
+    if experimental and city:
+        df = pd.read_csv(temp_csv_path / f"{city}.csv", parse_dates=["month"]).sort_values("month")
+    else:
+        df = pd.read_csv(csv_path, parse_dates=["month"]).sort_values("month")
     df = df.reset_index(drop=True)
     
     df["rain_prev_month"] = df["rain_total_mm"].shift(1)

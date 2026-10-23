@@ -8,10 +8,14 @@ from datetime import datetime
 
 BASE_DIR = Path(__file__).resolve().parent
 csv_path = BASE_DIR / "qc_dengue_monthly.csv"
+temp_csv_path = BASE_DIR.parent.parent / "temp_uploads"
 
 
-def dengue_model(curr_month_rain, prev_month_rain, month):
-    df = pd.read_csv(csv_path)[["YR", "MN", "DC_QC", "RF_NASA"]].dropna()
+def dengue_model(curr_month_rain, prev_month_rain, month, experimental=False, city=None):
+    if experimental and city:
+        df = pd.read_csv(csv_path / f"{city}.csv")[["YR", "MN", "DC_QC", "RF_NASA"]].dropna()
+    else:
+        df = pd.read_csv(csv_path)[["YR", "MN", "DC_QC", "RF_NASA"]].dropna()
     df = df.sort_values(["YR", "MN"]).reset_index(drop=True)
 
 

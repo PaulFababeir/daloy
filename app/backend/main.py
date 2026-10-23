@@ -10,10 +10,12 @@ from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 from dataset.leptos.main import leptos_model
 from dataset.dengue.main import dengue_model
+import pandas as pd
 import math
 import csv
-import io
-
+from io import BytesIO
+from pathlib import Path
+import uuid
 from prediction_engine import engine, MONTHS, MON3
 
 app = FastAPI(
@@ -36,6 +38,8 @@ class PredictFeatures(BaseModel):
     curr_month_rainfall: float
     prev_month_rainfall: float
     month: str
+    experimental: bool
+    city: str
 
 
 class PredictRequest(BaseModel):
@@ -71,20 +75,44 @@ class PredictResponse(BaseModel):
     history_points: Optional[List[Dict[str, Any]]] = None
 
 
-@app.get("/")
-def test():
-    return {"message": "hello"}
+UPLOAD_DIR = Path("temp_uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
 
+
+@app.post("/upload-csv")
+async def upload_csv(file: UploadFile = File(...)):
+    if not file.filename.endswith(".csv"):
+        raise HTTPException(
+            status_code=400,
+            detail="Please upload a CSV file."
+        )
+
+    contents = await file.read()
+
+    df = pd.read_csv(BytesIO(contents))
+
+    return {
+        "filename": file.filename,
+        "rows": len(df),
+        "columns": df.columns.tolist()
+    }
 
 @app.api_route("/api/predict/leptos", methods=["GET", "POST"])
 def predict_leptos(features: PredictFeatures):
-    cases = leptos_model(features.curr_month_rainfall, features.prev_month_rainfall, features.month)
+    if features.experimental and features.city:
+        cases = leptos_model(features.curr_month_rainfall, features.prev_month_rainfall, features.month, features.experimental, features.city)
+    else:
+        cases = leptos_model(features.curr_month_rainfall, features.prev_month_rainfall, features.month)
+    
     return {"cases": cases.tolist()}
 
 
 @app.api_route("/api/predict/dengue", methods=["GET", "POST"])
 def predict_dengue(features: PredictFeatures):
-    cases = dengue_model(features.curr_month_rainfall, features.prev_month_rainfall, features.month)
+    if features.experimental and features.city:
+        cases = dengue_model(features.curr_month_rainfall, features.prev_month_rainfall, features.month, features.experimental, features.city)
+    else:
+        cases = dengue_model(features.curr_month_rainfall, features.prev_month_rainfall, features.month)
     return {"cases": cases.tolist()}
 
 
@@ -209,93 +237,144 @@ def get_flood_zones(disease: str):
 @app.post("/api/upload-csv")
 async def upload_csv(
     disease: str = Form(...),
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    city: str = Form(...),
 ):
     key = disease.lower()
+
     if key not in ("dengue", "lepto"):
-        raise HTTPException(status_code=400, detail="Disease must be 'dengue' or 'lepto'")
+        raise HTTPException(
+            status_code=400,
+            detail="Disease must be 'dengue' or 'lepto'"
+        )
 
+    # Read uploaded file into bytes
     contents = await file.read()
+    
+
+    # Convert CSV contents into a pandas DataFrame
     try:
-        text = contents.decode("utf-8-sig")
-    except UnicodeDecodeError:
-        text = contents.decode("latin-1")
+        try:
+            df = pd.read_csv(BytesIO(contents), encoding="utf-8-sig")
+        except UnicodeDecodeError:
+            df = pd.read_csv(BytesIO(contents), encoding="latin-1")
 
-    reader = csv.reader(io.StringIO(text.strip()))
-    rows = list(reader)
-    if not rows:
-        raise HTTPException(status_code=400, detail="Uploaded file is empty.")
+    except pd.errors.EmptyDataError:
+        raise HTTPException(
+            status_code=400,
+            detail="Uploaded file is empty."
+        )
+    except pd.errors.ParserError:
+        raise HTTPException(
+            status_code=400,
+            detail="Unable to parse CSV file."
+        )
 
-    headers = [h.strip() for h in rows[0]]
+    # Clean column names
+    df.columns = df.columns.str.strip()
+
+    if df.empty:
+        raise HTTPException(
+            status_code=400,
+            detail="Uploaded file contains no data rows."
+        )
+
+    # Validate expected columns
     expected_cols = (
         ['YR', 'MN', 'DC_QC', 'RF_NASA', 'n_weeks']
         if key == 'dengue'
         else ['month', 'lepto', 'rain_total_mm', 'n_weeks']
     )
 
-    missing = [c for c in expected_cols if c not in headers]
+    missing = [c for c in expected_cols if c not in df.columns]
+
     if missing:
         return {
             "valid": False,
-            "errors": [f"Missing expected columns: {', '.join(missing)}"],
+            "errors": [
+                f"Missing expected columns: {', '.join(missing)}"
+            ],
             "expected_columns": expected_cols,
-            "found_columns": headers
+            "found_columns": df.columns.tolist()
         }
 
-    parsed_rows = []
+    # Identify the relevant columns
+    rain_col = 'RF_NASA' if key == 'dengue' else 'rain_total_mm'
+    case_col = 'DC_QC' if key == 'dengue' else 'lepto'
+
+    # Convert rainfall and case columns to numeric values
+    df[rain_col] = pd.to_numeric(df[rain_col], errors="coerce")
+    df[case_col] = pd.to_numeric(df[case_col], errors="coerce")
+
+    # Ignore completely empty rows
+    df = df.dropna(how="all")
+
+    # Validate numeric values
     errors = []
 
-    rain_idx = headers.index('RF_NASA' if key == 'dengue' else 'rain_total_mm')
-    case_idx = headers.index('DC_QC' if key == 'dengue' else 'lepto')
+    invalid_rows = df[df[[rain_col, case_col]].isna().any(axis=1)]
 
-    rain_vals = []
-    case_vals = []
+    for idx in invalid_rows.index:
+        errors.append(
+            f"Row {idx + 2}: non-numeric data in rainfall or case count column."
+        )
 
-    for idx, r in enumerate(rows[1:], start=2):
-        if not r or all(c.strip() == '' for c in r):
-            continue
-        try:
-            rain_val = float(r[rain_idx].strip())
-            case_val = float(r[case_idx].strip())
-            if rain_val < 0 or case_val < 0:
-                errors.append(f"Row {idx}: negative values detected.")
-            rain_vals.append(rain_val)
-            case_vals.append(case_val)
-            parsed_rows.append(r)
-        except (ValueError, IndexError):
-            errors.append(f"Row {idx}: non-numeric data in rainfall or case count column.")
+    # Keep only rows with valid numeric rainfall and case values
+    parsed_df = df.dropna(subset=[rain_col, case_col]).copy()
 
-    if len(parsed_rows) < 24:
-        errors.append(f"Need at least 24 monthly records for Leave-One-Year-Out CV (found {len(parsed_rows)}).")
+    # Check for negative values
+    negative_rows = parsed_df[
+        (parsed_df[rain_col] < 0) |
+        (parsed_df[case_col] < 0)
+    ]
 
-    # Simple rank calculation for Spearman rho
-    def rank_data(arr):
-        indexed = sorted(range(len(arr)), key=lambda k: arr[k])
-        ranks = [0] * len(arr)
-        for rank, i in enumerate(indexed, 1):
-            ranks[i] = rank
-        return ranks
+    for idx in negative_rows.index:
+        errors.append(f"Row {idx + 2}: negative values detected.")
 
+    # Check minimum number of records
+    if len(parsed_df) < 24:
+        errors.append(
+            f"Need at least 24 monthly records for Leave-One-Year-Out CV "
+            f"(found {len(parsed_df)})."
+        )
+
+    
+    temp_filename = f"{city}.csv"
+    temp_path = UPLOAD_DIR / temp_filename
+    
+    with open(temp_path, "wb") as f:
+        f.write(contents)
+        
+    # Calculate Spearman correlation using pandas
     rho = 0.0
-    if len(rain_vals) >= 5:
-        r_ranks = rank_data(rain_vals)
-        c_ranks = rank_data(case_vals)
-        n = len(rain_vals)
-        d_sq = sum((r_ranks[i] - c_ranks[i]) ** 2 for i in range(n))
-        rho = 1.0 - (6.0 * d_sq) / (n * (n * n - 1.0))
-        rho = max(-1.0, min(1.0, round(rho, 3)))
+
+    if len(parsed_df) >= 5:
+        correlation = parsed_df[rain_col].corr(
+            parsed_df[case_col],
+            method="spearman"
+        )
+
+        if pd.notna(correlation):
+            rho = round(float(correlation), 3)
+
+    # Generate summary statistics
+    rain_vals = parsed_df[rain_col]
+    case_vals = parsed_df[case_col]
 
     return {
         "valid": len(errors) == 0,
-        "row_count": len(parsed_rows),
+        "row_count": len(parsed_df),
         "errors": errors[:5],
         "spearman_rho": rho,
         "summary": {
-            "mean_rainfall": round(sum(rain_vals) / len(rain_vals), 1) if rain_vals else 0,
-            "mean_cases": round(sum(case_vals) / len(case_vals), 1) if case_vals else 0,
-            "total_cases": int(sum(case_vals)) if case_vals else 0
+            "mean_rainfall": round(float(rain_vals.mean()), 1)
+                if len(rain_vals) else 0,
+            "mean_cases": round(float(case_vals.mean()), 1)
+                if len(case_vals) else 0,
+            "total_cases": int(case_vals.sum())
+                if len(case_vals) else 0
         },
-        "preview": [dict(zip(headers, r)) for r in parsed_rows[:5]]
+        "preview": parsed_df.head(5).to_dict(orient="records")
     }
 
 
