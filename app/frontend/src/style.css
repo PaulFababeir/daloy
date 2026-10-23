@@ -52,3 +52,36 @@
 .animate-pulse-glow {
   animation: pulseGlow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Action summary report: print only the report sheet */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  #root,
+  .daloy-no-print {
+    display: none !important;
+  }
+
+  .daloy-report-portal {
+    position: static !important;
+    display: block !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: none !important;
+  }
+
+  .daloy-report-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .daloy-report-group {
+    break-inside: avoid;
+  }
+}
