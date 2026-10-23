@@ -68,10 +68,23 @@ class PredictResponse(BaseModel):
     flood_zones: List[Dict[str, Any]]
 
 
+@app.post("/api/predict/leptos")
+def predict_leptos_post(features: LeptosPredictFeatures):
+    """Predict monthly leptospirosis cases in Manila using HistGradientBoostingRegressor model (POST with JSON)."""
+    res = leptos_model(features.curr_month_rainfall, features.prev_month_rainfall, features.month)
+    return res if isinstance(res, list) else [float(res)]
+
+
 @app.get("/api/predict/leptos")
-def predict_leptos(features: LeptosPredictFeatures):
-    return leptos_model(features.curr_month_rainfall, features.prev_month_rainfall, features.month)
-    
+def predict_leptos_get(
+    curr_month_rainfall: float = 150.0,
+    prev_month_rainfall: float = 60.0,
+    month: str = "March"
+):
+    """Predict monthly leptospirosis cases via GET query parameters."""
+    res = leptos_model(curr_month_rainfall, prev_month_rainfall, month)
+    return res if isinstance(res, list) else [float(res)]
+
 @app.get("/api/health")
 def health_check():
     return {
