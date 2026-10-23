@@ -35,7 +35,7 @@ No team captain.
 
 ## Paul (code, model, slides, proposal)
 - Done: shared repo + AI context files; past-finalists review (`docs/FINALISTS_INSIGHTS.md`); NEW PROPOSAL tab aligned with its methodology and repo docs re-synced (2026-10-23).
-- Done (branch `feat/action-summary`, 2026-10-24): "View Summary" pop-up in the action plan (`app/frontend/src/components/ActionSummaryReport.tsx`). It's a one-page report with key figures, actions grouped by deadline (48 h / 72 h / 7–14 days) in a table, flood-vulnerable barangays, and Print / Save as PDF and Copy Brief buttons. Checkboxes stay in sync with the readiness checklist.
+- Done (branch `feat/action-summary`, 2026-10-24): "View Summary" pop-up in the action plan (`app/frontend/src/components/ActionSummaryReport.tsx`). It's a one-glance brief: a headline sentence with predicted cases, a one-line verdict by risk level, one line per deadline (48 h / 72 h / 14 days) with the action, target and lead unit, the high-risk hotspots and the month with the most similar rainfall. The full action table sits behind a toggle. It has Print / Save as PDF and Copy Brief buttons, and its checkboxes stay in sync with the readiness checklist.
 - Next: slides, using the patterns in `docs/FINALISTS_INSIGHTS.md`.
 - Next: confirm external-data rule / deliverables on official FAQ.
 
