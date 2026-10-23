@@ -97,20 +97,8 @@ export const App: React.FC = () => {
       <header className="fixed top-3 left-4 right-4 z-30 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         {/* Brand & Map Legend Pill */}
         <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/90 shadow-xl pointer-events-auto">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#5EC4D4] to-[#1B6E86] flex items-center justify-center shadow">
-            <svg className="w-5 h-5 text-white" viewBox="0 0 40 40" fill="none">
-              <path
-                d="M20 3 C 26 12, 33 19, 33 26 a13 13 0 0 1 -26 0 C 7 19, 14 12, 20 3 Z"
-                fill="white"
-                fillOpacity="0.92"
-              />
-              <path
-                d="M11 27 q4.5 -4 9 0 t9 0"
-                stroke="#1B6E86"
-                strokeWidth="2.6"
-                strokeLinecap="round"
-              />
-            </svg>
+          <div className="w-8 h-8 rounded-xl bg-slate-950 border border-slate-700/80 flex items-center justify-center shadow-lg overflow-hidden shrink-0">
+            <img src="/favicon.svg" alt="DALOY Logo" className="w-7 h-7 object-contain" />
           </div>
           <div>
             <div className="flex items-center gap-2">
