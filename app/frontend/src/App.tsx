@@ -96,8 +96,8 @@ export const App: React.FC = () => {
       {/* TOP FLOATING HUD HEADER OVERLAY */}
       <header className="fixed top-3 left-4 right-4 z-30 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         {/* Brand & Map Legend Pill */}
-        <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/90 shadow-xl pointer-events-auto">
-          <div className="w-8 h-8 rounded-xl bg-slate-950 border border-slate-700/80 flex items-center justify-center shadow-lg overflow-hidden shrink-0">
+        <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800/90 shadow-xl pointer-events-auto">
+          <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700/80 flex items-center justify-center shadow-sm overflow-hidden shrink-0">
             <img src="/favicon.svg" alt="DALOY Logo" className="w-7 h-7 object-contain" />
           </div>
           <div>
@@ -105,7 +105,7 @@ export const App: React.FC = () => {
               <span className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white">
                 DALOY
               </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-500/15 text-teal-600 dark:text-teal-300 border border-teal-500/30">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 dark:bg-teal-500/15 dark:text-teal-300 dark:border-teal-500/30">
                 Metro Manila 3D
               </span>
             </div>
