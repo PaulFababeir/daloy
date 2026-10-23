@@ -82,6 +82,56 @@ Candidates tested for each disease: Poisson regression, gradient boosting and ra
 - **Baseline:** the average of the other years. For leptospirosis this is the mean weekly rate × `n_weeks`.
 - **Results:** TBD. Add the CV numbers for each model and baseline here once they're final.
 
+## App features: data needs
+
+Features were finalized at the 2026-10-23 team meeting (full list in `docs/UI_SPEC.md`).
+
+| Feature | Data it needs | Status |
+|---|---|---|
+| Predicted cases | Dengue: the month's rainfall (mm). Leptospirosis: current-month rainfall, previous-month rainfall, calendar month, and `n_weeks` (to turn the predicted weekly rate back into monthly cases). | Inputs follow the models above. The UI input fields are TBD. |
+| Most similar past month | The city's monthly history: the training panels above. | **Method TBD.** One option: nearest neighbour on the model inputs (rainfall, plus month for leptospirosis), showing that month's actual cases. Whatever is chosen, it should be explainable in one sentence. |
+| Flood-vulnerable areas | Flood data for areas within Quezon City and Manila, plus area boundaries. | **Source TBD.** Candidates: UP NOAH flood-hazard maps (2025 runner-up link.od used NOAH flood shapefiles), LiPAD flood-hazard maps, Open Hazards PH. A Quezon City barangay shapefile is in the UPRI-NOAH repo. Note: hazard maps model flood *scenarios* (e.g. 25-year return period); "flood history" in the strict sense needs records of past flood events. Pick one and say which. |
+| Upload another city (experimental) | A CSV in the formats below. | **Behaviour TBD:** retrain the same model on the upload (with leave-one-year-out CV) or apply our trained models. |
+
+### User-uploaded CSV format (experimental feature)
+
+One CSV per disease. Column names must match exactly. The formats mirror the monthly training panels.
+
+**Leptospirosis:** `month,lepto,rain_total_mm,n_weeks`
+
+| Column | Meaning | Example |
+|---|---|---|
+| `month` | First day of the month, `YYYY-MM-DD` | `2001-01-01` |
+| `lepto` | Leptospirosis cases in the month | `6` |
+| `rain_total_mm` | Total rainfall in the month, mm | `79.67` |
+| `n_weeks` | Number of case weeks assigned to the month (4 or 5) | `5` |
+
+```csv
+month,lepto,rain_total_mm,n_weeks
+2001-01-01,6,79.67,5
+```
+
+**Dengue:** `YR,MN,DC_QC,RF_NASA,n_weeks`
+
+| Column | Meaning | Example |
+|---|---|---|
+| `YR` | Year | `2010` |
+| `MN` | Month number, 1–12 | `1` |
+| `DC_QC` | Dengue cases in the month (the name comes from the Quezon City dataset; keep it for any city) | `110` |
+| `RF_NASA` | Total rainfall in the month, mm | `39.53` |
+| `n_weeks` | Number of case weeks assigned to the month | `4` |
+
+```csv
+YR,MN,DC_QC,RF_NASA,n_weeks
+2010,1,110,39.53,4
+```
+
+Notes:
+
+- The two formats differ (a date column for leptospirosis; year + month number for dengue). This is as agreed at the meeting.
+- The dengue model in the methodology doesn't use `n_weeks`; it is in the format anyway.
+- Validation rules for uploads (required columns, no missing values, minimum number of years): TBD. Leave-one-year-out CV needs at least 2 full years, and more for a meaningful result.
+
 ## Open methodology questions (team to decide)
 
 - **Lead time.** Both models use **current-month** rainfall, so they estimate this month's cases from this month's rain. That is a nowcast, not a forecast. It can still warn earlier than surveillance, because rainfall is available within days while case reports arrive about 2–3 weeks late. The proposal and slides should describe it that way. For real lead time, a model would need only past rainfall (e.g. previous month only) or rainfall forecasts as input.

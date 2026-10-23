@@ -51,7 +51,11 @@ Each estimate comes with suggested actions (pre-positioning doxycycline and IV f
 ## MVP plan (deadline Oct 24, 2026)
 
 1. **Models:** done per the proposal methodology. Record the final CV results in `docs/DATA_MODEL.md`.
-2. **App:** Streamlit app showing, per disease, actual vs. predicted monthly cases, a rainfall what-if slider (the models take rainfall as input), the effect-size statement, and action cards.
+2. **App (features finalized at the 2026-10-23 team meeting; details in `docs/UI_SPEC.md`):**
+   1. **Case prediction** for dengue (Quezon City) and leptospirosis (Manila): predicted monthly cases for the user's input, the most similar month and year in the city's history, and the city's flood-vulnerable areas.
+   2. **Experimental upload** of a CSV for a city outside our scope (formats in `docs/DATA_MODEL.md`).
+   
+   Not in the finalized list, so confirm before building: action cards, the rainfall what-if slider (may be the same as the input), the effect-size statement.
 3. **Repo:** README with setup and run steps, a dependency file, and a reproducible notebook or script for each model.
 4. **Proposal, slides, demo video:** align them with the methodology (see below).
 
@@ -71,8 +75,20 @@ Still open in the proposal:
 - `[ISO / epidemiological]` week numbering (the team must choose; see `docs/DATA_MODEL.md`).
 - Citations for the DOH 2025 leptospirosis figures and the NKTI leptospirosis ward (both marked "Citation TBD").
 - CV results are not in the proposal yet.
+- **The finalized app features (2026-10-23 meeting) are not in the proposal.** Its Executive Summary and 5th Objective describe estimated-vs-actual charts, a rainfall slider and suggested actions. They don't mention the most similar past month, flood-vulnerable areas or the CSV upload.
 
 ## Feature priority (impact vs. effort)
+
+**Finalized (2026-10-23 meeting):**
+
+| Feature | Challenge goal | Effort | Open question |
+|---|---|---|---|
+| Predicted monthly cases (dengue QC, leptospirosis Manila) | Stop outbreaks early | Low | Exact input fields |
+| Most similar past month and year in the city's history | All (explains the prediction) | Low | Similarity method |
+| Flood-vulnerable areas within the city | Prevention, healthcare reach | Medium | Flood data source and area unit |
+| Experimental CSV upload for another city | Healthcare reach (scaling) | Medium | Retrain vs. apply our models |
+
+**Other candidates (not finalized):**
 
 | Feature | Challenge goal | Impact | Effort |
 |---|---|---|---|
@@ -82,7 +98,6 @@ Still open in the proposal:
 | Action cards: doxycycline, IV fluids, test kits, clean-up drives | Healthcare reach | High | Low |
 | Model & methodology page: CV results vs. baseline, limitations | All (rigor) | High | Low |
 | 17-region dengue map (UPRI-NOAH Regional sheet) | Stop outbreaks early | High | Medium |
-| Quezon City barangay hotspot map | Healthcare reach | Medium | Medium |
 | SMS/email alert mock-up for LGUs | Stop outbreaks early | Medium | Low |
 | Hospital/RHU capacity overlay | Healthcare reach | Medium–High | Medium |
 

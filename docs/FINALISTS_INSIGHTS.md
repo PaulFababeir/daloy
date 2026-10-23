@@ -36,7 +36,9 @@
 | Local story + citation | Proposal has the 2025 leptospirosis surge and NKTI ward | Both citations still TBD |
 | Working product | **No app code in the repo yet** | Biggest gap |
 | Users and roles | LGU health officers | Write the LGU workflow on one slide |
-| What-if | Not built | Easy: our models take rainfall as input |
+| What-if | Finalized: user input → predicted cases + most similar past month | Not built yet; our models take rainfall as input, so it's easy |
+| Local, specific claim (2Ls' "this exact drain") | Finalized: flood-vulnerable areas within each city | Needs a flood data source |
+| Scaling vision (2Ls, Vibe Coders) | Finalized: experimental CSV upload for other cities | Say on a slide that it's experimental, and what it does with the data |
 | Independent validation | Leave-one-year-out CV vs. baseline | Compare our rainfall–leptospirosis pattern with Matsushita et al. (2018), same city and period |
 | Limitations + roadmap | Not written | Write them (list below) |
 | Reproducible repo | Docs only | README run steps, `requirements.txt`, one script or notebook per model |

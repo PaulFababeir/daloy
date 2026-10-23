@@ -3,7 +3,7 @@
 > Update **only your own section**. See `AGENTS.md`.
 
 ## Overall
-- Phase: models done per the proposal methodology (monthly Poisson models, Manila leptospirosis + Quezon City dengue). Remaining: code in repo, app, proposal cleanup, slides, demo video.
+- Phase: models done per the proposal methodology (monthly Poisson models, Manila leptospirosis + Quezon City dengue). App features finalized at the 2026-10-23 meeting (see `docs/UI_SPEC.md`). Remaining: code in repo, app, slides, demo video.
 - Source of truth: proposal doc, NEW PROPOSAL tab. Fully aligned with its METHODOLOGY on 2026-10-23; repo docs synced after. NEW METHODOLOGY tab = team's reference copy.
 - Deadline: Oct 24, 2026 (confirmed). Team target: finish by Oct 23, 2026.
 - MVP plan and feature priorities: see `docs/PROJECT_BRIEF.md`. Lessons from past finalists: `docs/FINALISTS_INSIGHTS.md`.
@@ -47,6 +47,13 @@ No team captain.
 - [x] Fill the Methodology placeholders `[citation]`, `[end year]`, `[confirm]` (2026-10-23).
 - [ ] Choose the week convention and replace `[ISO / epidemiological]` in the proposal.
 - [ ] Find citations for the DOH 2025 leptospirosis figures and the NKTI ward (proposal says "Citation TBD").
+- [x] Finalize app features (2026-10-23 meeting).
+- [ ] Decide the prediction inputs (rainfall only, or rainfall + month).
+- [ ] Decide how "most similar past month" is computed.
+- [ ] Pick the flood data source and area unit for flood-vulnerable areas (candidates in `docs/DATA_MODEL.md`).
+- [ ] Decide what the app does with an uploaded CSV (retrain vs. apply our models), and the upload validation rules.
+- [ ] Confirm whether action cards and the what-if slider stay (not in the finalized list).
+- [ ] Add the finalized features to the proposal (Executive Summary, 5th Objective).
 - [ ] Add the final CV results to `docs/DATA_MODEL.md`.
 - [ ] Commit model code + `requirements.txt` + README run steps.
 - [ ] Decide the dengue framing: nowcast (same-month rain) or add previous-month rain for lead time.

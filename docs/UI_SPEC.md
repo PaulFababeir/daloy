@@ -4,6 +4,27 @@
 
 Draft UI concept for a web app that predicts leptospirosis and dengue risk from meteorological data.
 
+## Finalized features (team meeting, 2026-10-23)
+
+**These override anything later in this file that conflicts with them.** The sections after this one are the earlier draft concept.
+
+### 1. Case prediction: dengue (Quezon City) and leptospirosis (Manila)
+
+- **Predicted cases:** show the model's predicted monthly cases for the user's input. The exact input fields are TBD. The models need monthly rainfall (both diseases), plus the previous month's rainfall and the calendar month for leptospirosis.
+- **Most similar past month:** from the city's history in the dataset, show the month and year most similar to the input, with what actually happened then. The similarity method is TBD (see `DATA_MODEL.md` → "App features: data needs").
+- **Flood-vulnerable areas:** show which areas of the city are vulnerable, based on flood history. The data source and area unit (e.g. barangay) are TBD.
+
+### 2. Experimental: upload data for another city
+
+- A user can upload a dataset for a city outside our scope, which is only Quezon City and Manila.
+- Format: **CSV**, one file per disease, with the exact columns in `DATA_MODEL.md` → "User-uploaded CSV format".
+- Label the feature as **experimental** in the UI.
+- What the app does with the upload (retrain the model on it, or apply our trained models to it): TBD. The proposal's Scope says the models may not transfer to other cities without retraining.
+
+### Not in the finalized list (confirm whether to keep)
+
+Action cards, the rainfall what-if slider (it may be the same thing as the "input" above), the alerts screen, and export/reports. These come from the earlier draft and the proposal's Executive Summary, which mentions the slider and suggested actions.
+
 ## Overall concept
 
 A **weather app for disease risk**. The UI should answer three questions fast:
@@ -89,14 +110,19 @@ The disease toggle swaps which drivers are highlighted, which makes this distinc
 
 Updated 2026-10-23 after the proposal methodology changed (see `DATA_MODEL.md`). Not decided yet.
 
-- **Map unit:** the models cover **two cities only** (Manila for leptospirosis, Quezon City for dengue), so a choropleth of many areas has nothing to shade yet. Options: drop the map for the MVP and lead with charts; show a simple two-city map; or build the 17-region dengue map from the UPRI-NOAH Regional sheet (stretch).
+- **Map unit:** ~~open~~ **Resolved by the 2026-10-23 meeting:** the map shows **flood-vulnerable areas within each city**, not predicted risk per area. The models still give one number per city per month, so don't shade areas by predicted cases.
 - **Time resolution and horizon:** the models are **monthly**, not weekly. The "+1 / +2 / +4 weeks" slider doesn't apply. Both models use the current month's rainfall, so both are nowcasts (leptospirosis also uses last month's rainfall). Their lead comes from beating the 2–3 week reporting delay. Replace the time slider with a **month selector** plus a **rainfall what-if slider**.
 - **Drivers panel:** rainfall is the only weather input in both final models. Temperature, humidity and flood indicators should not be shown as model drivers.
 - **Risk scale:** the models output expected case counts. The UI's 4 levels (Low / Moderate / High / Critical) or the DOH-style 3 tiers (Normal / Alert / Epidemic) would need thresholds defined on monthly counts. Pick one, or show counts against the baseline instead.
-- **"Why" explanations:** SHAP is not in the current methodology. Use the dengue effect size (change in cases per 100 mm of rain) and, for leptospirosis, the current/previous-month rainfall and season as the plain-language "why".
+- **"Why" explanations:** SHAP is not in the current methodology. Use the dengue effect size (change in cases per 100 mm of rain), the current/previous-month rainfall and season for leptospirosis, and the **most similar past month** (finalized feature) as the plain-language "why".
 
 ## Open questions
 
 - Who are the intended users: the public or health professionals?
 - ~~What geographic level is the case data at?~~ Answered: city level (Manila, Quezon City), monthly. See `DATA_MODEL.md`.
 - Do we want separate public-facing and professional views, or just one? (2025 runner-up link.od had both; see `docs/FINALISTS_INSIGHTS.md`.)
+- What exactly does the user enter for a prediction (rainfall only, or rainfall + month)?
+- How is "most similar past month" defined?
+- Which flood data, and at what area unit?
+- For an uploaded city: retrain on the upload, or apply our models?
+- Keep action cards and the what-if slider?

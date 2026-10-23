@@ -58,7 +58,11 @@ Details on each dataset (columns, coverage, caveats) are in `docs/DATA_MODEL.md`
 | Project Tycho (PH 1955–2010) | https://www.tycho.pitt.edu/ | ⚠️ | Optional historical data |
 | HDX admin boundaries (Philippines) | https://data.humdata.org/ | ⚠️ | Province shapes for the map. Exact dataset page TBD. |
 | PSA (census / population) | https://psa.gov.ph/ | ⚠️ | Population for rates and the vulnerability index |
-| UP NOAH flood-hazard maps | https://noah.up.edu.ph/ | ⚠️ | Flood layer. Access unverified. |
+| UP NOAH flood-hazard maps | https://noah.up.edu.ph/ | ⚠️ | **Candidate for flood-vulnerable areas (finalized feature).** 2025 runner-up link.od used NOAH flood shapefiles. |
+| UP NOAH data (Google Drive, from PJDSC 2025 catalog) | https://drive.google.com/drive/folders/1ALE4-E9c-4AGjm1fqiPprWHrLUskeY9o | ⚠️ | Flood, landslide and storm-surge data. Listed in the 2025 catalog; not opened. |
+| LiPAD flood-hazard maps (Phil-LiDAR) | https://lipad.dream.upd.edu.ph/ | ⚠️ | Candidate for flood-vulnerable areas. Listed in the 2025 catalog; not opened. |
+| Open Hazards PH | https://github.com/maning/open-hazards-ph | ⚠️ | Candidate for flood-vulnerable areas. Listed in the 2025 catalog; not opened. |
+| Quezon City barangay shapefile (UPRI-NOAH repo, `DC_Regional-Brgy.7z.001/.002`) | https://github.com/UPRI-NOAH/dengue-rainfall-dataset | ✅ | Area boundaries for Quezon City (142 barangays). Manila boundaries: TBD. |
 | ERA5 / ERA5-Land (Copernicus) | https://cds.climate.copernicus.eu/ | ⚠️ | Alternative weather source |
 | CHIRPS rainfall | https://www.chc.ucsb.edu/data/chirps | ⚠️ | Alternative rainfall source |
 | GPM IMERG rainfall | https://gpm.nasa.gov/data/imerg | ⚠️ | Alternative rainfall source |
