@@ -115,6 +115,16 @@ class DaloyEngine:
         if key == 'dengue':
             return math.exp(cfg['coef']['b0'] + cfg['coef']['b1'] * z(rain))
         
+        if key == 'lepto':
+            try:
+                from dataset.leptos.main import leptos_model
+                p_val = prev if prev is not None else rain
+                res = leptos_model(rain, p_val, month)
+                if isinstance(res, list) and len(res) > 0:
+                    return float(res[0])
+            except Exception:
+                pass
+        
         ang = (2.0 * math.pi * month) / 12.0
         c = cfg['coef']
         p_val = prev if prev is not None else rain
