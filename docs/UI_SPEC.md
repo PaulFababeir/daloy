@@ -87,14 +87,16 @@ The disease toggle swaps which drivers are highlighted, which makes this distinc
 
 ## Conflicts with `docs/DATA_MODEL.md` (team to resolve)
 
-These came up when the UI tab was migrated. They are not decided yet.
+Updated 2026-10-23 after the proposal methodology changed (see `DATA_MODEL.md`). Not decided yet.
 
-- **Map unit:** the UI draft says municipality, district or barangay. The catalogue dengue data is **province-level**, with Quezon City as the only city-level showcase (see `DATA_MODEL.md` and `DECISIONS.md`).
-- **Risk scale:** the UI draft uses 4 levels (Low / Moderate / High / Critical). The data model uses the 3 DOH tiers (Normal / Alert / Epidemic). Pick one, or define how they map.
-- **Forecast horizons:** the text says this week / +2 / +4 weeks; the wireframe slider says +1 / +2 / +4. The dengue model forecasts 1–4 weeks ahead.
+- **Map unit:** the models cover **two cities only** (Manila for leptospirosis, Quezon City for dengue), so a choropleth of many areas has nothing to shade yet. Options: drop the map for the MVP and lead with charts; show a simple two-city map; or build the 17-region dengue map from the UPRI-NOAH Regional sheet (stretch).
+- **Time resolution and horizon:** the models are **monthly**, not weekly. The "+1 / +2 / +4 weeks" slider doesn't apply. Both models use the current month's rainfall, so both are nowcasts (leptospirosis also uses last month's rainfall). Their lead comes from beating the 2–3 week reporting delay. Replace the time slider with a **month selector** plus a **rainfall what-if slider**.
+- **Drivers panel:** rainfall is the only weather input in both final models. Temperature, humidity and flood indicators should not be shown as model drivers.
+- **Risk scale:** the models output expected case counts. The UI's 4 levels (Low / Moderate / High / Critical) or the DOH-style 3 tiers (Normal / Alert / Epidemic) would need thresholds defined on monthly counts. Pick one, or show counts against the baseline instead.
+- **"Why" explanations:** SHAP is not in the current methodology. Use the dengue effect size (change in cases per 100 mm of rain) and, for leptospirosis, the current/previous-month rainfall and season as the plain-language "why".
 
 ## Open questions
 
 - Who are the intended users: the public or health professionals?
-- What geographic level is the case data at? (Per `DATA_MODEL.md`: province, plus Quezon City weekly. See the conflicts above.)
-- Do we want separate public-facing and professional views, or just one?
+- ~~What geographic level is the case data at?~~ Answered: city level (Manila, Quezon City), monthly. See `DATA_MODEL.md`.
+- Do we want separate public-facing and professional views, or just one? (2025 runner-up link.od had both; see `docs/FINALISTS_INSIGHTS.md`.)

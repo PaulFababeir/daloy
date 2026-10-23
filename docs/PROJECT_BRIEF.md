@@ -26,55 +26,60 @@
 
 **Name:** `<project-name>` (TBD, not yet decided). Working tagline: "Trace the rain, target the outbreak."
 
-**Pivot:** the team moved away from an earlier idea (diabetes/heart disease risk prediction with facility suggestions) to **forecasting dengue and leptospirosis outbreaks from meteorological data**, at province or city level.
+**Pivot:** the team moved away from an earlier idea (diabetes/heart disease risk prediction with facility suggestions) to **estimating dengue and leptospirosis risk from rainfall**.
+
+**Source of truth:** the proposal doc's NEW PROPOSAL tab (link in `docs/LINKS.md`). Its METHODOLOGY section was rewritten by the team on or before 2026-10-23 and is what this brief now follows. The tab's Executive Summary, Objectives, Scope and Appendices still describe the earlier plan; see "Proposal sections that are out of date" below.
 
 ### Pitch
 
-Philippine dengue and leptospirosis surges follow the rain. Leptospirosis peaks about 2 weeks after heavy rainfall, and dengue follows weeks to months of warm, wet weather. Local government units (LGUs) usually act only after cases cross thresholds.
+Philippine dengue and leptospirosis surges follow the rain. Leptospirosis peaks about 2 weeks after heavy rainfall (Matsushita et al., 2018), and dengue rises with wet-season weather. Local government units (LGUs) usually act only after cases cross thresholds, and surveillance reports arrive about 2–3 weeks late.
 
-`<project-name>` combines Department of Health (DOH) surveillance data with satellite weather data to:
+`<project-name>` links rainfall to expected cases so LGUs can act before the surveillance numbers arrive:
 
-- forecast weekly dengue risk 1–4 weeks ahead for each province or city,
-- flag flood-triggered leptospirosis surges before patients arrive, and
-- explain each alert in plain language.
+- **Leptospirosis (Manila):** monthly cases estimated from this month's and last month's rainfall plus seasonality.
+- **Dengue (Quezon City):** monthly cases estimated from this month's rainfall, with an interpretable effect size (change in cases per extra 100 mm of rain).
 
-Each alert comes with recommended actions: where to pre-position doxycycline and IV fluids, which hospitals may be overwhelmed, and when to run clean-up drives. This covers all three challenge goals.
+Each estimate comes with suggested actions (pre-positioning doxycycline and IV fluids, hospital readiness, clean-up drives).
 
 ### Scope
 
-- **Dengue** is the main **trained forecaster**, because the catalogue has the data for it.
-- **Leptospirosis** is an **evidence-based trigger module**: a rule or simple model that fires 2 weeks after heavy rain or flooding. Public case data for it is mostly national or regional.
-- **Spatial unit:** province level, because that is the granularity of the catalogue's dengue data. City-level output is a showcase only where city data exists, with Quezon City as the main example.
+- **Places:** Manila (leptospirosis) and Quezon City (dengue). The earlier province-level plan is superseded.
+- **Resolution:** monthly. Weekly models were tried and fit poorly.
+- **Models:** gradient boosting with Poisson loss (leptospirosis) and Poisson regression (dengue), validated with leave-one-year-out cross-validation. Full detail in `docs/DATA_MODEL.md`.
+- **Data:** leptospirosis cases from the EIDC hydro-epidemiological dataset (Manila, 2001–2012) with NASA POWER rainfall; dengue cases and rainfall from the UPRI-NOAH dataset (Quezon City, 2010–2025).
 
-## MVP plan
+## MVP plan (deadline Oct 24, 2026)
 
-1. **Dengue model (2–3 days):**
-   1. Clean the HDX data into weekly province counts.
-   2. Pull NASA POWER weather and aggregate it to weekly.
-   3. Build the lag features.
-   4. Backtest the baseline, the NB-GLM and LightGBM against each other.
-   5. Apply the DOH tiers.
-   6. Build the Streamlit map with a SHAP panel.
-2. **Leptospirosis module (1 day):** a 2-week-lag rain/flood trigger with a what-if slider and action cards.
-3. **Stretch goals:**
-   - Quezon City city-level demo
-   - Hospital and rural health unit (RHU) capacity overlay
-   - SMS alert mock-up for LGUs
-   - Google Trends nowcasting
+1. **Models:** done per the proposal methodology. Record the final CV results in `docs/DATA_MODEL.md`.
+2. **App:** Streamlit app showing, per disease, actual vs. predicted monthly cases, a rainfall what-if slider (the models take rainfall as input), the effect-size statement, and action cards.
+3. **Repo:** README with setup and run steps, a dependency file, and a reproducible notebook or script for each model.
+4. **Proposal, slides, demo video:** align them with the methodology (see below).
+
+Stretch, only if time allows: a 17-region dengue map from the same UPRI-NOAH workbook's Regional sheet, or a Quezon City barangay hotspot map.
+
+## Proposal sections that are out of date
+
+As of 2026-10-23, these sections of the NEW PROPOSAL tab still describe the earlier plan and conflict with its own METHODOLOGY:
+
+- **Executive Summary, Objectives:** province level, weekly forecasts 1–4 weeks ahead, negative-binomial + LightGBM, Normal/Alert/Epidemic tiers, SHAP.
+- **Scope & Limitations:** province level, HDX data, rainfall *trigger* for leptospirosis (it is now a trained model).
+- **Appendices:** explain negative-binomial regression, LightGBM and SHAP. None of these are in the methodology now.
+- **References:** missing the two datasets the methodology uses (EIDC leptospirosis, UPRI-NOAH/Zenodo dengue), and still lists HDX and Mendeley, which it no longer uses. Full APA entries are in `docs/DATA_MODEL.md`.
+- **Placeholders in the Methodology:** `[citation]` (NASA POWER), `[end year]` (2025), `[ISO / epidemiological]` and `[confirm]` (answers in `docs/DATA_MODEL.md`).
 
 ## Feature priority (impact vs. effort)
 
 | Feature | Challenge goal | Impact | Effort |
 |---|---|---|---|
-| Province/city risk map with Normal/Alert/Epidemic tiers | Stop outbreaks early | High | Low |
-| 1–4 week forecasts with uncertainty bands | Stop outbreaks early | High | Medium |
-| SHAP "why is risk high" panel | All | High | Low |
-| Typhoon/heavy-rain what-if slider → leptospirosis surge in 2 weeks | Prevention | High | Low–Medium |
+| Actual vs. predicted monthly cases chart, per disease | Stop outbreaks early | High | Low |
+| Rainfall what-if slider → expected cases | Prevention | High | Low |
+| Plain-language effect size ("each extra 100 mm of rain → X% more dengue cases") | All | High | Low |
 | Action cards: doxycycline, IV fluids, test kits, clean-up drives | Healthcare reach | High | Low |
+| Model & methodology page: CV results vs. baseline, limitations | All (rigor) | High | Low |
+| 17-region dengue map (UPRI-NOAH Regional sheet) | Stop outbreaks early | High | Medium |
+| Quezon City barangay hotspot map | Healthcare reach | Medium | Medium |
+| SMS/email alert mock-up for LGUs | Stop outbreaks early | Medium | Low |
 | Hospital/RHU capacity overlay | Healthcare reach | Medium–High | Medium |
-| Vulnerability index (population density, poverty, water and sanitation, flood hazard) | Prevention | Medium | Medium |
-| SMS/email alert mock-up | Stop outbreaks early | Medium | Low |
-| Google Trends nowcast | Stop outbreaks early | Medium | Medium |
 
 ## Story hook: the 2025 leptospirosis surge
 

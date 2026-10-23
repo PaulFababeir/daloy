@@ -1,10 +1,12 @@
 # AGENTS.md — rules for every AI working in this repo
 
-**Project:** `<project-name>` (name TBD; "Trace the rain, target the outbreak"), the team's PJDSC 2026 entry. It forecasts weekly dengue outbreak risk per province 1–4 weeks ahead from DOH surveillance and weather data, and flags leptospirosis surges about 2 weeks after heavy rain, with plain-language alerts and recommended actions for LGUs.
+**Project:** `<project-name>` (name TBD; "Trace the rain, target the outbreak"), the team's PJDSC 2026 entry. It estimates monthly leptospirosis cases in Manila and monthly dengue cases in Quezon City from rainfall, using Poisson models, so LGUs can prepare before surveillance reports (2–3 weeks late) arrive.
+
+**Source of truth for the method:** the proposal doc's NEW PROPOSAL tab, METHODOLOGY section (link in `docs/LINKS.md`). `docs/DATA_MODEL.md` mirrors it. If they disagree, the proposal wins; update `DATA_MODEL.md`.
 
 **Deadline:** Oct 24, 2026 (confirmed). **Team target: finish by Oct 23, 2026.**
 
-**Tech stack:** Python (pandas, geopandas, statsmodels, LightGBM, SHAP), Streamlit app, folium and/or plotly for maps and charts.
+**Tech stack:** Python (pandas, scikit-learn), Streamlit app, folium and/or plotly for maps and charts.
 
 ## Read order (start of every session)
 
@@ -52,6 +54,7 @@ docs/DATA_MODEL.md     datasets, features, models, evaluation
 docs/STATUS.md         who's doing what, blockers, next steps
 docs/DECISIONS.md      append-only decision log
 docs/LINKS.md          all links: proposal doc, deliverables, datasets, papers, tools
+docs/FINALISTS_INSIGHTS.md  what past PJDSC finalists did, and recommendations for us
 app/                   Streamlit app
 data/                  datasets
 notebooks/             exploration and modeling notebooks
