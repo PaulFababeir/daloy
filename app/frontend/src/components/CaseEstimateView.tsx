@@ -7,6 +7,7 @@ import {
 import { NCRCityPolygon } from './metroManilaData';
 import { ScatterChart } from './ScatterChart';
 import { FloodZonesCard } from './FloodZonesCard';
+import { ActionSummaryReport } from './ActionSummaryReport';
 import {
   CloudRain,
   History,
@@ -24,7 +25,8 @@ import {
   Copy,
   Check,
   AlertTriangle,
-  Activity
+  Activity,
+  FileText
 } from 'lucide-react';
 
 interface CaseEstimateViewProps {
@@ -69,6 +71,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
   const [showFormula, setShowFormula] = useState<boolean>(false);
   const [checkedActions, setCheckedActions] = useState<Record<string, boolean>>({});
   const [copiedBrief, setCopiedBrief] = useState<boolean>(false);
+  const [showSummaryReport, setShowSummaryReport] = useState<boolean>(false);
 
   const fallbackHistory = getHistoricalPoints(activeDisease);
   const history = result?.history_points || fallbackHistory;
@@ -882,7 +885,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
                 isDark ? 'bg-slate-900 border-slate-800' : 'bg-[#FFFDF9] border-[#E7E1D6]'
               }`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-                  <div className="flex items-center gap-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     <div className={`p-2.5 rounded-xl ${isDark ? 'bg-teal-950/60 text-teal-400' : 'bg-[#EAE3D6] text-stone-800'}`}>
                       <ShieldAlert className="w-5 h-5" />
                     </div>
@@ -897,27 +900,41 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
                     </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={handleCopyBrief}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition self-start ${
-                      isDark
-                        ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
-                        : 'bg-[#F4EFE6] hover:bg-[#EAE3D6] text-stone-800 border-[#E7E1D6]'
-                    }`}
-                  >
-                    {copiedBrief ? (
-                      <>
-                        <Check className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>Brief Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3.5 h-3.5" />
-                        <span>Copy Situation Brief</span>
-                      </>
-                    )}
-                  </button>
+                  <div className="flex flex-row sm:flex-col items-stretch gap-2 shrink-0 sm:ml-auto">
+                    <button
+                      type="button"
+                      onClick={() => setShowSummaryReport(true)}
+                      className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                        isDark
+                          ? 'bg-teal-900/60 hover:bg-teal-800/70 text-teal-100 border-teal-700/60'
+                          : 'bg-teal-50 hover:bg-teal-100 text-teal-900 border-teal-300'
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>View Summary</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCopyBrief}
+                      className={`inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition ${
+                        isDark
+                          ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700'
+                          : 'bg-[#F4EFE6] hover:bg-[#EAE3D6] text-stone-800 border-[#E7E1D6]'
+                      }`}
+                    >
+                      {copiedBrief ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-500" />
+                          <span>Brief Copied!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Copy Situation Brief</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
 
                 {/* Readiness Checklist Progress Bar */}
@@ -1057,6 +1074,19 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {showSummaryReport && result && (
+        <ActionSummaryReport
+          result={result}
+          activeDisease={activeDisease}
+          checkedActions={checkedActions}
+          onToggleCheck={toggleActionCheck}
+          onCopyBrief={handleCopyBrief}
+          copiedBrief={copiedBrief}
+          onClose={() => setShowSummaryReport(false)}
+          theme={theme}
+        />
       )}
     </>
   );

@@ -52,3 +52,68 @@
 .animate-pulse-glow {
   animation: pulseGlow 2.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* Action summary report: open animation */
+@keyframes daloyBackdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes daloyPanelIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.daloy-report-backdrop-in {
+  animation: daloyBackdropIn 180ms ease-out;
+}
+
+.daloy-report-panel-in {
+  animation: daloyPanelIn 240ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .daloy-report-backdrop-in,
+  .daloy-report-panel-in {
+    animation: none;
+  }
+}
+
+/* Action summary report: print only the report sheet */
+@media print {
+  @page {
+    margin: 12mm;
+  }
+
+  #root,
+  .daloy-no-print {
+    display: none !important;
+  }
+
+  .daloy-report-portal {
+    position: static !important;
+    display: block !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: none !important;
+  }
+
+  .daloy-report-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  .daloy-report-group {
+    break-inside: avoid;
+  }
+}
