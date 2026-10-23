@@ -1,9 +1,16 @@
-# `<project-name>`
+# DALOY (`<project-name>`)
 
 *Trace the rain, target the outbreak.* The team's PJDSC 2026 entry: estimating monthly leptospirosis cases (Manila) and dengue cases (Quezon City) from rainfall.
 
-**Working on this repo with an AI?** Start with [AGENTS.md](AGENTS.md). It has the read order, the update rules, and a starter prompt for browser chat AIs.
+## Quickstart & Setup
+- **How to run the full app (Backend + Frontend):** [HOW_TO_RUN.md](HOW_TO_RUN.md)
+- **FastAPI Backend guide:** [app/backend/README.md](app/backend/README.md)
+- **Brand Kit & Design System:** [docs/BRAND_KIT.md](docs/BRAND_KIT.md)
 
-- Project overview: [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md)
-- Current status: [docs/STATUS.md](docs/STATUS.md)
-- All links (proposal doc, datasets, references): [docs/LINKS.md](docs/LINKS.md)
+## Project Documentation
+- **Project overview:** [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md)
+- **Current status:** [docs/STATUS.md](docs/STATUS.md)
+- **Data models & methodology:** [docs/DATA_MODEL.md](docs/DATA_MODEL.md)
+- **UI specifications:** [docs/UI_SPEC.md](docs/UI_SPEC.md)
+- **All links (proposal doc, datasets, references):** [docs/LINKS.md](docs/LINKS.md)
+- **Working on this repo with an AI?** Start with [AGENTS.md](AGENTS.md).
