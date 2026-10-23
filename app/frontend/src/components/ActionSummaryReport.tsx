@@ -75,7 +75,7 @@ export const ActionSummaryReport: React.FC<ActionSummaryReportProps> = ({
 
   return createPortal(
     <div
-      className={`daloy-report-portal fixed inset-0 z-50 flex items-start justify-center p-4 sm:p-6 overflow-y-auto ${
+      className={`daloy-report-portal daloy-report-backdrop-in fixed inset-0 z-50 flex items-start justify-center p-4 sm:p-6 overflow-y-auto ${
         isDark ? 'bg-slate-950/85' : 'bg-stone-900/55'
       }`}
       onClick={onClose}
@@ -83,7 +83,7 @@ export const ActionSummaryReport: React.FC<ActionSummaryReportProps> = ({
       aria-modal="true"
       aria-label="LGU action summary report"
     >
-      <div className="w-full max-w-4xl my-auto" onClick={e => e.stopPropagation()}>
+      <div className="daloy-report-panel-in w-full max-w-4xl my-auto" onClick={e => e.stopPropagation()}>
         {/* Toolbar (hidden when printing) */}
         <div className="daloy-no-print flex flex-wrap items-center justify-end gap-2 mb-3">
           <button
