@@ -24,7 +24,7 @@ export interface Philippines3DMapProps {
 }
 
 const DARK_GRAY_SHADES = [0x1E293B, 0x1E293B, 0x243244, 0x2C3B4E];
-const LIGHT_GRAY_SHADES = [0xD1DCE7, 0xD9E3EC, 0xE0E8F0, 0xE7EEF5];
+const LIGHT_GRAY_SHADES = [0xDBD4C8, 0xE2DCD2, 0xE9E3DA, 0xEDE8E1];
 
 export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
   activeDisease,
@@ -145,15 +145,15 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
         // Other 15 Metro Manila Cities: Architectural Grayscale
         const baseGray = isDark
           ? DARK_GRAY_SHADES[city.grayShade] || 0x1E293B
-          : LIGHT_GRAY_SHADES[city.grayShade] || 0xD1DCE7;
+          : LIGHT_GRAY_SHADES[city.grayShade] || 0xE2DCD2;
 
         if (isHovered || isInspected) {
-          mat.color.setHex(isDark ? 0x475569 : 0x94A3B8);
+          mat.color.setHex(isDark ? 0x475569 : 0xB8ADA1);
           mat.emissive.setHex(isDark ? 0x38BDF8 : 0x0284C7);
-          mat.emissiveIntensity = isDark ? 0.22 : 0.14;
+          mat.emissiveIntensity = isDark ? 0.22 : 0.12;
           mesh.scale.y = 0.85;
           border.position.y = baseDepth * 0.85 + 0.012;
-          lineMat.color.setHex(isDark ? 0x7DD3FC : 0x0284C7);
+          lineMat.color.setHex(isDark ? 0x7DD3FC : 0x1C1917);
           lineMat.opacity = 1.0;
         } else {
           mat.color.setHex(baseGray);
@@ -161,7 +161,7 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
           mat.emissiveIntensity = 0;
           mesh.scale.y = 0.65;
           border.position.y = baseDepth * 0.65 + 0.008;
-          lineMat.color.setHex(isDark ? 0x475569 : 0x94A3B8);
+          lineMat.color.setHex(isDark ? 0x475569 : 0xA8A29E);
           lineMat.opacity = 0.7;
         }
       }
@@ -180,8 +180,8 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
     const isDark = theme === 'dark';
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(isDark ? 0x070E14 : 0xE2ECF2);
-    scene.fog = new THREE.FogExp2(isDark ? 0x070E14 : 0xE2ECF2, 0.015);
+    scene.background = new THREE.Color(isDark ? 0x070E14 : 0xF7F4EE);
+    scene.fog = new THREE.FogExp2(isDark ? 0x070E14 : 0xF7F4EE, 0.015);
 
     const camera = new THREE.PerspectiveCamera(
       40,
@@ -202,19 +202,19 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
     // Fast Lighting
     const hemiLight = new THREE.HemisphereLight(
       0xFFFFFF,
-      isDark ? 0x0F172A : 0x94A3B8,
-      isDark ? 1.35 : 1.65
+      isDark ? 0x0F172A : 0xD6CEC3,
+      isDark ? 1.35 : 1.7
     );
     scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xFFFFFF, isDark ? 1.35 : 1.1);
+    const dirLight = new THREE.DirectionalLight(0xFFFFFF, isDark ? 1.35 : 1.15);
     dirLight.position.set(12, 24, 14);
     scene.add(dirLight);
 
-    // Ground Plane + Grid
+    // Ground Plane + Grid (Warm Linen & Sand in Light Mode)
     const waterGeo = new THREE.PlaneGeometry(80, 80);
     const waterMat = new THREE.MeshBasicMaterial({
-      color: isDark ? 0x070E14 : 0xDCE7EF
+      color: isDark ? 0x070E14 : 0xF1EDE4
     });
     const waterMesh = new THREE.Mesh(waterGeo, waterMat);
     waterMesh.rotation.x = -Math.PI / 2;
@@ -224,8 +224,8 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
     const gridHelper = new THREE.GridHelper(
       60,
       90,
-      isDark ? 0x1E293B : 0xCBD5E1,
-      isDark ? 0x0F1A24 : 0xD5E0EA
+      isDark ? 0x1E293B : 0xE4DED4,
+      isDark ? 0x0F1A24 : 0xECE6DC
     );
     gridHelper.position.y = -0.01;
     scene.add(gridHelper);
@@ -536,7 +536,7 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
       <div className={`absolute bottom-5 left-1/2 -translate-x-1/2 z-20 flex flex-wrap items-center gap-1.5 px-3 py-2 rounded-2xl backdrop-blur-xl shadow-2xl pointer-events-auto transition-colors ${
         theme === 'dark'
           ? 'bg-slate-900/90 text-white border border-slate-700/80 shadow-black/40'
-          : 'bg-white/95 text-slate-800 border border-slate-200/90 shadow-slate-300/40'
+          : 'bg-[#FFFDF9]/95 text-stone-800 border border-[#E7E1D6] shadow-stone-300/40'
       }`}>
         <button
           onClick={() => {
@@ -546,7 +546,7 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
           className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
             activeDisease === 'dengue'
               ? 'bg-rose-600 text-white shadow-md'
-              : theme === 'dark' ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              : theme === 'dark' ? 'text-slate-300 hover:bg-slate-800' : 'text-stone-700 hover:bg-[#F3EFE6] hover:text-stone-900'
           }`}
         >
           <span className="w-2.5 h-2.5 rounded-full bg-rose-400 animate-pulse" />
@@ -560,15 +560,15 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
           }}
           className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
             activeDisease === 'lepto'
-              ? (theme === 'dark' ? 'bg-teal-600 text-white shadow-md' : 'bg-teal-700 text-white shadow-md')
-              : theme === 'dark' ? 'text-slate-300 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              ? (theme === 'dark' ? 'bg-teal-600 text-white shadow-md' : 'bg-[#0F766E] text-white shadow-md')
+              : theme === 'dark' ? 'text-slate-300 hover:bg-slate-800' : 'text-stone-700 hover:bg-[#F3EFE6] hover:text-stone-900'
           }`}
         >
           <span className={`w-2.5 h-2.5 rounded-full animate-pulse ${theme === 'dark' ? 'bg-teal-300' : 'bg-emerald-300'}`} />
           City of Manila (Leptospirosis)
         </button>
 
-        <div className={`h-4 w-px mx-1 ${theme === 'dark' ? 'bg-slate-700' : 'bg-slate-200'}`} />
+        <div className={`h-4 w-px mx-1 ${theme === 'dark' ? 'bg-slate-700' : 'bg-[#E7E1D6]'}`} />
 
         <button
           onClick={() => setCameraView('ncr')}
@@ -576,10 +576,10 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition ${
             theme === 'dark'
               ? 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              : 'text-stone-700 hover:bg-[#F3EFE6] hover:text-stone-900'
           }`}
         >
-          <Compass className="w-3.5 h-3.5 text-sky-500" />
+          <Compass className="w-3.5 h-3.5 text-stone-600 dark:text-sky-400" />
           <span>Full Metro Manila</span>
         </button>
 
@@ -589,10 +589,10 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
           className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-medium transition ${
             theme === 'dark'
               ? 'text-slate-300 hover:bg-slate-800 hover:text-white'
-              : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              : 'text-stone-700 hover:bg-[#F3EFE6] hover:text-stone-900'
           }`}
         >
-          <Grid className="w-3.5 h-3.5 text-amber-500" />
+          <Grid className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
           <span>Top-Down</span>
         </button>
 
@@ -603,10 +603,10 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
             riversEnabled
               ? theme === 'dark'
                 ? 'bg-sky-500/30 text-sky-300 border border-sky-500/40 shadow-sm'
-                : 'bg-sky-100 text-sky-800 border border-sky-300 shadow-sm'
+                : 'bg-[#EBF3F8] text-[#0369A1] border border-[#BAE0F5] shadow-sm'
               : theme === 'dark'
                 ? 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                : 'text-stone-700 hover:bg-[#F3EFE6] hover:text-stone-900'
           }`}
         >
           <Waves className="w-3.5 h-3.5" />
@@ -618,8 +618,8 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
           title="Toggle rainfall animation"
           className={`p-1.5 rounded-xl transition ${
             rainEnabled
-              ? theme === 'dark' ? 'bg-sky-500/20 text-sky-300' : 'bg-sky-100 text-sky-800'
-              : theme === 'dark' ? 'text-slate-500 hover:bg-slate-800' : 'text-slate-400 hover:bg-slate-100'
+              ? theme === 'dark' ? 'bg-sky-500/20 text-sky-300' : 'bg-[#EBF3F8] text-[#0369A1]'
+              : theme === 'dark' ? 'text-slate-500 hover:bg-slate-800' : 'text-stone-400 hover:bg-[#F3EFE6]'
           }`}
         >
           <CloudRain className="w-4 h-4" />
@@ -638,10 +638,10 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
           <div className={`px-4 py-3 rounded-2xl backdrop-blur-xl shadow-2xl min-w-[240px] max-w-[290px] border transition-colors ${
             theme === 'dark'
               ? 'bg-slate-950/95 text-white border-slate-700/90'
-              : 'bg-white/95 text-slate-900 border-slate-200/90 shadow-slate-300/40'
+              : 'bg-[#FFFDF9]/95 text-stone-900 border-[#E7E1D6] shadow-stone-300/50'
           }`}>
             <div className="flex items-center justify-between gap-2 mb-1">
-              <span className={`text-[10px] font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
+              <span className={`text-[10px] font-bold uppercase tracking-wider ${theme === 'dark' ? 'text-slate-400' : 'text-stone-500'}`}>
                 {hoveredCity.district}
               </span>
               {hoveredCity.isFocus ? (
@@ -653,7 +653,7 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
                         : 'bg-rose-50 text-rose-800 border border-rose-200'
                       : theme === 'dark'
                         ? 'bg-teal-500/25 text-teal-300 border border-teal-500/40'
-                        : 'bg-teal-50 text-teal-800 border border-teal-200'
+                        : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                   }`}
                 >
                   {hoveredCity.focusId === 'dengue' ? 'Dengue Data' : 'Leptospirosis Data'}
@@ -662,34 +662,34 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
                 <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
                   theme === 'dark'
                     ? 'bg-slate-800 text-slate-300 border border-slate-700'
-                    : 'bg-slate-100 text-slate-600 border border-slate-200'
+                    : 'bg-[#F4EFE6] text-stone-700 border border-[#E7E1D6]'
                 }`}>
                   Grayscale · Out of Scope
                 </span>
               )}
             </div>
 
-            <div className={`text-base font-extrabold ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+            <div className={`text-base font-extrabold ${theme === 'dark' ? 'text-white' : 'text-stone-900'}`}>
               {hoveredCity.name}
             </div>
 
-            <div className={`mt-2 pt-2 border-t space-y-1 text-[11px] ${theme === 'dark' ? 'border-slate-800' : 'border-slate-100'}`}>
+            <div className={`mt-2 pt-2 border-t space-y-1 text-[11px] ${theme === 'dark' ? 'border-slate-800' : 'border-[#F0EBE1]'}`}>
               <div className="flex justify-between">
-                <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}>Land Area:</span>
-                <span className={`font-mono font-semibold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>{hoveredCity.areaKm2} km²</span>
+                <span className={theme === 'dark' ? 'text-slate-400' : 'text-stone-500'}>Land Area:</span>
+                <span className={`font-mono font-semibold ${theme === 'dark' ? 'text-slate-200' : 'text-stone-800'}`}>{hoveredCity.areaKm2} km²</span>
               </div>
               <div className="flex justify-between">
-                <span className={theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}>Population:</span>
-                <span className={`font-mono font-semibold ${theme === 'dark' ? 'text-slate-200' : 'text-slate-800'}`}>{hoveredCity.population}</span>
+                <span className={theme === 'dark' ? 'text-slate-400' : 'text-stone-500'}>Population:</span>
+                <span className={`font-mono font-semibold ${theme === 'dark' ? 'text-slate-200' : 'text-stone-800'}`}>{hoveredCity.population}</span>
               </div>
-              <div className={`pt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-slate-500'}`}>
-                <span className={`font-semibold ${theme === 'dark' ? 'text-slate-300' : 'text-slate-700'}`}>Basin: </span>
+              <div className={`pt-0.5 ${theme === 'dark' ? 'text-slate-400' : 'text-stone-500'}`}>
+                <span className={`font-semibold ${theme === 'dark' ? 'text-slate-300' : 'text-stone-700'}`}>Basin: </span>
                 {hoveredCity.riverBasin}
               </div>
             </div>
 
             <div className={`mt-2 pt-1.5 border-t text-[10px] font-semibold ${
-              theme === 'dark' ? 'border-slate-800/80 text-sky-400' : 'border-slate-100 text-sky-700'
+              theme === 'dark' ? 'border-slate-800/80 text-sky-400' : 'border-[#F0EBE1] text-stone-700'
             }`}>
               {hoveredCity.isFocus
                 ? 'Click to select city & view live nowcast →'

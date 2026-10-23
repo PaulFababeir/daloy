@@ -71,7 +71,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
       {/* LEFT FLOATING HUD DOCK: Scenario Controls & Metro Manila City Inspector */}
       <aside className="fixed top-20 left-4 z-20 w-[340px] sm:w-[375px] max-h-[calc(100vh-145px)] overflow-y-auto space-y-3 pointer-events-auto pr-1">
         {/* Disease & Target City Switcher Card */}
-        <div className="p-4 rounded-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/90 shadow-2xl">
+        <div className="p-4 rounded-3xl bg-[#FFFDF9]/95 dark:bg-slate-900/90 backdrop-blur-xl border border-[#E7E1D6] dark:border-slate-800/90 shadow-2xl">
           <div className="flex items-center justify-between mb-2.5">
             <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">
               Active Metro Manila Target
@@ -81,7 +81,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/90">
+          <div className="grid grid-cols-2 gap-2 p-1 rounded-2xl bg-[#F4EFE6] dark:bg-slate-800/90">
             <button
               onClick={() => onDiseaseChange('dengue')}
               className={`flex flex-col items-start px-3 py-2 rounded-xl text-left transition ${
@@ -115,7 +115,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
         </div>
 
         {/* Scenario Inputs Card */}
-        <div className="p-5 rounded-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/90 shadow-2xl space-y-4">
+        <div className="p-5 rounded-3xl bg-[#FFFDF9]/95 dark:bg-slate-900/90 backdrop-blur-xl border border-[#E7E1D6] dark:border-slate-800/90 shadow-2xl space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-200/60 dark:border-slate-800">
             <div>
               <h2 className="text-sm font-extrabold text-slate-900 dark:text-white">
@@ -136,7 +136,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
             <select
               value={month}
               onChange={e => onMonthChange(Number(e.target.value))}
-              className="w-full px-3.5 py-2 rounded-xl bg-slate-100/90 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+              className="w-full px-3.5 py-2 rounded-xl bg-[#F4EFE6] dark:bg-slate-800/90 border border-[#E7E1D6] dark:border-slate-700 text-xs font-bold text-stone-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
             >
               {MONTH_NAMES.map((m, idx) => (
                 <option key={idx + 1} value={idx + 1}>
@@ -159,7 +159,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
                   max={1500}
                   value={rainfall}
                   onChange={e => onRainfallChange(Number(e.target.value))}
-                  className="w-18 px-2 py-0.5 text-right text-xs font-mono font-bold rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
+                  className="w-18 px-2 py-0.5 text-right text-xs font-mono font-bold rounded-lg bg-[#F4EFE6] dark:bg-slate-800 border border-[#E7E1D6] dark:border-slate-700 text-stone-900 dark:text-white"
                 />
                 <span className="text-[11px] font-semibold text-slate-400">mm</span>
               </div>
@@ -172,7 +172,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
               step={10}
               value={rainfall}
               onChange={e => onRainfallChange(Number(e.target.value))}
-              className={`w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer ${
+              className={`w-full h-2 bg-[#E5DFD4] dark:bg-slate-700 rounded-lg appearance-none cursor-pointer ${
                 activeDisease === 'dengue' ? 'accent-rose-600' : 'accent-teal-700 dark:accent-teal-500'
               }`}
             />
@@ -180,19 +180,19 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
             <div className="grid grid-cols-4 gap-1.5 mt-2.5">
               <button
                 onClick={() => handlePreset(0.3)}
-                className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition"
+                className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-[#F4EFE6] dark:bg-slate-800 hover:bg-[#EAE4D8] dark:hover:bg-slate-700 text-stone-800 dark:text-slate-300 border border-[#E2DBD0]/60 dark:border-transparent transition"
               >
                 Dry (75)
               </button>
               <button
                 onClick={() => handlePreset(1.0)}
-                className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition"
+                className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-[#F4EFE6] dark:bg-slate-800 hover:bg-[#EAE4D8] dark:hover:bg-slate-700 text-stone-800 dark:text-slate-300 border border-[#E2DBD0]/60 dark:border-transparent transition"
               >
                 Typical
               </button>
               <button
                 onClick={() => handlePreset(1.8)}
-                className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition"
+                className="px-2 py-1 text-[11px] font-semibold rounded-lg bg-[#F4EFE6] dark:bg-slate-800 hover:bg-[#EAE4D8] dark:hover:bg-slate-700 text-stone-800 dark:text-slate-300 border border-[#E2DBD0]/60 dark:border-transparent transition"
               >
                 Wet (450)
               </button>
@@ -224,7 +224,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
                   step={10}
                   value={prevRain}
                   onChange={e => onPrevRainChange(Number(e.target.value))}
-                  className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-700 dark:accent-teal-500"
+                  className="w-full h-1.5 bg-[#E5DFD4] dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-700 dark:accent-teal-500"
                 />
               </div>
 
@@ -289,7 +289,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
         </div>
 
         {/* Metro Manila City Inspector Card (Works for all 17 NCR cities) */}
-        <div className="p-4 rounded-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/90 shadow-2xl">
+        <div className="p-4 rounded-3xl bg-[#FFFDF9]/95 dark:bg-slate-900/90 backdrop-blur-xl border border-[#E7E1D6] dark:border-slate-800/90 shadow-2xl">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-sky-500" />
@@ -331,7 +331,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
                 <span>{inspectedCity.areaKm2} km²</span>
               </div>
 
-              <div className="p-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/70 text-[11px] space-y-1">
+              <div className="p-2.5 rounded-xl bg-[#F4EFE6] dark:bg-slate-800/70 border border-[#E7E1D6]/70 dark:border-transparent text-[11px] space-y-1">
                 <div>
                   <span className="font-semibold text-slate-700 dark:text-slate-200">Basin: </span>
                   <span className="text-slate-600 dark:text-slate-300">{inspectedCity.riverBasin}</span>
@@ -364,7 +364,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
       {result && (
         <aside className="fixed top-20 right-4 z-20 w-[340px] sm:w-[385px] max-h-[calc(100vh-145px)] overflow-y-auto space-y-3 pointer-events-auto pl-1">
           {/* Expected Cases KPI Card */}
-          <div className="p-5 rounded-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/90 shadow-2xl relative overflow-hidden">
+          <div className="p-5 rounded-3xl bg-[#FFFDF9]/95 dark:bg-slate-900/90 backdrop-blur-xl border border-[#E7E1D6] dark:border-slate-800/90 shadow-2xl relative overflow-hidden">
             <div
               className="absolute -right-12 -top-12 w-36 h-36 rounded-full blur-3xl pointer-events-none opacity-25"
               style={{
@@ -410,7 +410,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
             </div>
 
             {/* Baseline comparison bar */}
-            <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-slate-800/70 border border-slate-200/60 dark:border-slate-700/60 space-y-2 mt-3">
+            <div className="p-3 rounded-2xl bg-[#F4EFE6] dark:bg-slate-800/70 border border-[#E7E1D6] dark:border-slate-700/60 space-y-2 mt-3">
               <div className="flex items-center justify-between text-[11px] font-bold">
                 <span className="text-slate-600 dark:text-slate-300">
                   vs. Historical {result.month_name} Mean ({Math.round(result.baseline_cases)})
@@ -456,7 +456,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
 
           {/* Most Similar Past Month Card */}
           {result.similar_months && result.similar_months.length > 0 && (
-            <div className="p-4 rounded-3xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/90 shadow-2xl">
+            <div className="p-4 rounded-3xl bg-[#FFFDF9]/95 dark:bg-slate-900/90 backdrop-blur-xl border border-[#E7E1D6] dark:border-slate-800/90 shadow-2xl">
               <div className="flex items-center justify-between mb-2.5">
                 <div className="flex items-center gap-2">
                   <History className="w-4 h-4 text-amber-500" />
@@ -472,7 +472,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
               {(() => {
                 const top = result.similar_months[0];
                 return (
-                  <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/60 mb-2.5">
+                  <div className="p-3 rounded-2xl bg-[#F4EFE6] dark:bg-slate-800/70 border border-[#E7E1D6] dark:border-slate-700/60 mb-2.5">
                     <div className="flex items-baseline justify-between">
                       <span className="text-sm font-extrabold text-slate-900 dark:text-white">
                         {MONTH_NAMES[top.month - 1]} {top.year}
@@ -493,7 +493,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
                 {result.similar_months.slice(1).map((s, idx) => (
                   <div
                     key={idx}
-                    className="p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-[10px] border border-slate-200 dark:border-slate-800"
+                    className="p-2 rounded-xl bg-[#F4EFE6]/80 dark:bg-slate-800/50 text-[10px] border border-[#E7E1D6] dark:border-slate-800"
                   >
                     <div className="font-bold text-slate-800 dark:text-slate-200">
                       {MONTH_NAMES[s.month - 1].slice(0, 3)} {s.year}
@@ -518,8 +518,8 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
 
       {/* FLOATING ANALYTICS, FLOOD ZONES & LGU ACTIONS MODAL OVERLAY */}
       {showAnalyticsModal && result && (
-        <div className="fixed inset-0 z-40 bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 pointer-events-auto">
-          <div className="w-full max-w-5xl max-h-[88vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 sm:p-8 space-y-6">
+        <div className="fixed inset-0 z-40 bg-stone-900/40 dark:bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 pointer-events-auto">
+          <div className="w-full max-w-5xl max-h-[88vh] overflow-y-auto rounded-3xl bg-[#FFFDF9] dark:bg-slate-900 border border-[#E7E1D6] dark:border-slate-800 shadow-2xl p-6 sm:p-8 space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-teal-400">
@@ -538,7 +538,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
             </div>
 
             {/* Scatter Plot & Poisson Response Curve */}
-            <div className="p-5 rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800">
+            <div className="p-5 rounded-3xl bg-[#F4EFE6]/70 dark:bg-slate-800/50 border border-[#E7E1D6] dark:border-slate-800">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1">
                 Rainfall vs. {result.disease} Cases in {result.city}
               </h3>
@@ -565,7 +565,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <FloodZonesCard city={result.city} zones={result.flood_zones} />
 
-              <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
+              <div className="p-6 rounded-3xl bg-[#FFFDF9] dark:bg-slate-900 border border-[#E7E1D6] dark:border-slate-800 shadow-sm">
                 <div className="flex items-center gap-2.5 mb-4">
                   <div className="p-2 rounded-xl bg-slate-100 dark:bg-teal-950/60 text-slate-800 dark:text-teal-400">
                     <ShieldAlert className="w-5 h-5" />
@@ -584,9 +584,9 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
                   {result.actions.map((act, i) => (
                     <div
                       key={i}
-                      className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-start gap-3"
+                      className="p-3.5 rounded-2xl bg-[#F4EFE6] dark:bg-slate-800/60 border border-[#E7E1D6] dark:border-slate-800 flex items-start gap-3"
                     >
-                      <span className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-teal-950 text-slate-800 dark:text-teal-300 font-mono font-bold text-xs shrink-0">
+                      <span className="px-2 py-1 rounded-lg bg-[#E5DFD4] dark:bg-teal-950 text-stone-900 dark:text-teal-300 font-mono font-bold text-xs shrink-0">
                         {act.i}
                       </span>
                       <div>
