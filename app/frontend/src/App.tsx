@@ -76,7 +76,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen overflow-hidden bg-[#E2ECF2] dark:bg-[#070E14] text-[#16272E] dark:text-[#E8F1F3] select-none">
+    <div className="fixed inset-0 w-screen h-screen overflow-hidden bg-[#F7F4EE] dark:bg-[#070E14] text-stone-900 dark:text-[#E8F1F3] select-none">
       {/* FULL-SCREEN 3D METRO MANILA MAP BACKGROUND (17 NCR CITIES) */}
       <div className="absolute inset-0 z-0">
         <Philippines3DMap
@@ -96,26 +96,26 @@ export const App: React.FC = () => {
       {/* TOP FLOATING HUD HEADER OVERLAY */}
       <header className="fixed top-3 left-4 right-4 z-30 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         {/* Brand & Map Legend Pill */}
-        <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-white/95 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/90 dark:border-slate-800/90 shadow-xl pointer-events-auto">
-          <div className="w-8 h-8 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-700/80 flex items-center justify-center shadow-sm overflow-hidden shrink-0">
+        <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-[#FFFDF9]/95 dark:bg-slate-900/90 backdrop-blur-xl border border-[#E7E1D6] dark:border-slate-800/90 shadow-xl pointer-events-auto">
+          <div className="w-8 h-8 rounded-xl bg-[#FFFDF9] dark:bg-slate-950 border border-[#E7E1D6] dark:border-slate-700/80 flex items-center justify-center shadow-sm overflow-hidden shrink-0">
             <img src="/favicon.svg" alt="DALOY Logo" className="w-7 h-7 object-contain" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-base font-extrabold tracking-tight text-slate-900 dark:text-white">
+              <span className="text-base font-extrabold tracking-tight text-stone-900 dark:text-white">
                 DALOY
               </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200 dark:bg-teal-500/15 dark:text-teal-300 dark:border-teal-500/30">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#F4EFE6] text-stone-700 border border-[#E7E1D6] dark:bg-teal-500/15 dark:text-teal-300 dark:border-teal-500/30">
                 Metro Manila 3D
               </span>
             </div>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 hidden sm:block">
+            <p className="text-[10px] text-stone-600 dark:text-slate-400 hidden sm:block">
               Trace the rain, target the outbreak
             </p>
           </div>
 
           {/* City Color Key */}
-          <div className="hidden xl:flex items-center gap-3 pl-3 ml-1 border-l border-slate-200 dark:border-slate-800 text-[10px] font-semibold text-slate-500 dark:text-slate-400">
+          <div className="hidden xl:flex items-center gap-3 pl-3 ml-1 border-l border-[#E7E1D6] dark:border-slate-800 text-[10px] font-semibold text-stone-600 dark:text-slate-400">
             <span className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-sm bg-[#E11D48]" /> Quezon City (Dengue)
             </span>
@@ -123,13 +123,13 @@ export const App: React.FC = () => {
               <span className="w-2.5 h-2.5 rounded-sm bg-[#0D9488]" /> Manila (Leptospirosis)
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-slate-500" /> Other 15 Cities (Hoverable)
+              <span className="w-2.5 h-2.5 rounded-sm bg-stone-400" /> Other 15 Cities (Hoverable)
             </span>
           </div>
         </div>
 
         {/* Center Navigation Tabs Pill */}
-        <nav className="flex items-center gap-1 p-1.5 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/90 shadow-xl pointer-events-auto">
+        <nav className="flex items-center gap-1 p-1.5 rounded-2xl bg-[#FFFDF9]/95 dark:bg-slate-900/90 backdrop-blur-xl border border-[#E7E1D6] dark:border-slate-800/90 shadow-xl pointer-events-auto">
           <button
             onClick={() => {
               setActiveView('predict');
@@ -138,8 +138,8 @@ export const App: React.FC = () => {
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
               activeView === 'predict' && !showAnalyticsModal
-                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-stone-900 dark:bg-white text-white dark:text-slate-900 shadow-sm'
+                : 'text-stone-700 dark:text-slate-300 hover:text-stone-900 dark:hover:text-white hover:bg-[#F4EFE6] dark:hover:bg-slate-800/60'
             }`}
           >
             <Activity className="w-3.5 h-3.5" />
@@ -153,8 +153,8 @@ export const App: React.FC = () => {
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
               activeView === 'predict' && showAnalyticsModal
-                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-stone-900 dark:bg-white text-white dark:text-slate-900 shadow-sm'
+                : 'text-stone-700 dark:text-slate-300 hover:text-stone-900 dark:hover:text-white hover:bg-[#F4EFE6] dark:hover:bg-slate-800/60'
             }`}
           >
             <BarChart3 className="w-3.5 h-3.5" />
@@ -168,8 +168,8 @@ export const App: React.FC = () => {
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
               activeView === 'upload'
-                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-stone-900 dark:bg-white text-white dark:text-slate-900 shadow-sm'
+                : 'text-stone-700 dark:text-slate-300 hover:text-stone-900 dark:hover:text-white hover:bg-[#F4EFE6] dark:hover:bg-slate-800/60'
             }`}
           >
             <UploadCloud className="w-3.5 h-3.5" />
@@ -183,8 +183,8 @@ export const App: React.FC = () => {
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
               activeView === 'method'
-                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-sm'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+                ? 'bg-stone-900 dark:bg-white text-white dark:text-slate-900 shadow-sm'
+                : 'text-stone-700 dark:text-slate-300 hover:text-stone-900 dark:hover:text-white hover:bg-[#F4EFE6] dark:hover:bg-slate-800/60'
             }`}
           >
             <FileText className="w-3.5 h-3.5" />
@@ -193,17 +193,17 @@ export const App: React.FC = () => {
         </nav>
 
         {/* Right Controls Pill: API Status, Hide/Show HUD Cards, Theme Toggle */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-slate-200/80 dark:border-slate-800/90 shadow-xl pointer-events-auto">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-2xl bg-[#FFFDF9]/95 dark:bg-slate-900/90 backdrop-blur-xl border border-[#E7E1D6] dark:border-slate-800/90 shadow-xl pointer-events-auto">
           <div
             className={`hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold ${
               backendOnline
-                ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-300'
-                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'
+                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                : 'bg-[#F4EFE6] dark:bg-slate-800 text-stone-600 dark:text-slate-400 border border-[#E7E1D6]/70 dark:border-transparent'
             }`}
           >
             <span
               className={`w-2 h-2 rounded-full ${
-                backendOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-400'
+                backendOnline ? 'bg-emerald-500 animate-pulse' : 'bg-stone-400'
               }`}
             />
             <span>{backendOnline ? 'FastAPI Live' : 'Local Engine'}</span>
@@ -213,7 +213,7 @@ export const App: React.FC = () => {
             <button
               onClick={() => setHudVisible(!hudVisible)}
               title={hudVisible ? 'Hide overlay cards to view full map' : 'Show overlay cards'}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold bg-[#F4EFE6] hover:bg-[#EAE3D6] dark:bg-slate-800 dark:hover:bg-slate-700 text-stone-800 dark:text-slate-200 border border-[#E7E1D6]/70 dark:border-transparent transition"
             >
               {hudVisible ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
               <span className="hidden sm:inline">{hudVisible ? 'Hide Cards' : 'Show Cards'}</span>
@@ -223,7 +223,7 @@ export const App: React.FC = () => {
           <button
             onClick={toggleTheme}
             aria-label="Toggle dark mode"
-            className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+            className="p-2 rounded-xl bg-[#F4EFE6] hover:bg-[#EAE3D6] dark:bg-slate-800 text-stone-700 dark:text-slate-300 dark:hover:bg-slate-700 border border-[#E7E1D6]/70 dark:border-transparent transition"
           >
             {theme === 'light' ? (
               <Moon className="w-4 h-4" />
@@ -258,11 +258,11 @@ export const App: React.FC = () => {
 
       {/* FLOATING MODAL OVERLAY FOR "YOUR CITY CSV" VIEW */}
       {activeView === 'upload' && (
-        <div className="fixed inset-0 z-30 bg-slate-900/35 dark:bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 pt-20 pb-16 pointer-events-auto">
-          <div className="w-full max-w-5xl max-h-full overflow-y-auto rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 sm:p-8 relative">
+        <div className="fixed inset-0 z-30 bg-stone-900/40 dark:bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 pt-20 pb-16 pointer-events-auto">
+          <div className="w-full max-w-5xl max-h-full overflow-y-auto rounded-3xl bg-[#FFFDF9]/98 dark:bg-slate-900/95 backdrop-blur-xl border border-[#E7E1D6] dark:border-slate-800 shadow-2xl p-6 sm:p-8 relative">
             <button
               onClick={() => setActiveView('predict')}
-              className="absolute top-5 right-5 p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+              className="absolute top-5 right-5 p-2 rounded-xl bg-[#F4EFE6] hover:bg-[#EAE3D6] dark:bg-slate-800 text-stone-700 dark:text-slate-300 border border-[#E7E1D6] dark:border-slate-700 transition"
             >
               <X className="w-5 h-5" />
             </button>
@@ -273,11 +273,11 @@ export const App: React.FC = () => {
 
       {/* FLOATING MODAL OVERLAY FOR "METHOD & DATA" VIEW */}
       {activeView === 'method' && (
-        <div className="fixed inset-0 z-30 bg-slate-900/35 dark:bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 pt-20 pb-16 pointer-events-auto">
-          <div className="w-full max-w-5xl max-h-full overflow-y-auto rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 sm:p-8 relative">
+        <div className="fixed inset-0 z-30 bg-stone-900/40 dark:bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 pt-20 pb-16 pointer-events-auto">
+          <div className="w-full max-w-5xl max-h-full overflow-y-auto rounded-3xl bg-[#FFFDF9]/98 dark:bg-slate-900/95 backdrop-blur-xl border border-[#E7E1D6] dark:border-slate-800 shadow-2xl p-6 sm:p-8 relative">
             <button
               onClick={() => setActiveView('predict')}
-              className="absolute top-5 right-5 p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+              className="absolute top-5 right-5 p-2 rounded-xl bg-[#F4EFE6] hover:bg-[#EAE3D6] dark:bg-slate-800 text-stone-700 dark:text-slate-300 border border-[#E7E1D6] dark:border-slate-700 transition"
             >
               <X className="w-5 h-5" />
             </button>

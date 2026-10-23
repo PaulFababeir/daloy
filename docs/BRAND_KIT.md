@@ -25,25 +25,25 @@ In public health epidemiology, **"Daloy"** takes on two deeper meanings:
 
 DALOY is engineered with a **first-class dual-theme system**:
 * **Dark Mode ("Command Center / Outbreak Radar"):** The default theme. High-contrast neon accents over abyssal slate surfaces, designed for low-light command rooms, nighttime LGU emergency ops, and glowing 3D depth perception.
-* **Light Mode ("Clinical Dossier / Municipal Report"):** Clean alabaster surfaces with crisp clinical ink typography, optimized for daytime office work, executive briefing printouts, and formal stakeholder presentations.
+* **Light Mode ("Warm White & Soft Beige / Editorial Dossier"):** Clean warm alabaster cards (`#FFFDF9`) set against soft oat beige trays (`#F4EFE6`) with warm limestone borders (`#E7E1D6`) and deep espresso charcoal typography (`#1C1917`), optimized for daytime executive readability, high-clarity briefing printouts, and zero eye-strain.
 
 ### Complete Side-by-Side Color Sheet
 
-| UI Token / Role | Dark Mode ("Command Center") | Light Mode ("Clinical Dossier") | Semantic Meaning |
+| UI Token / Role | Dark Mode ("Command Center") | Light Mode ("Warm White & Beige") | Semantic Meaning |
 |:---|:---:|:---:|:---|
-| **Canvas / Background** | `#0B0F17`<br>`rgb(11, 15, 23)` | `#F8FAFC`<br>`rgb(248, 250, 252)` | App canvas & 3D viewport void |
-| **Primary Glass Surface** | `rgba(15, 23, 42, 0.88)`<br>(Slate-900 @ 88%) | `rgba(255, 255, 255, 0.92)`<br>(Pure White @ 92%) | Floating HUD cards & side drawers |
-| **Secondary Chip / Tray** | `rgba(30, 41, 59, 0.70)`<br>(Slate-800 @ 70%) | `rgba(241, 245, 249, 0.90)`<br>(Slate-100 @ 90%) | Inset inputs, tabs & data cards |
-| **Card Borders / Dividers** | `rgba(148, 163, 184, 0.14)`<br>`#334155` | `rgba(203, 213, 225, 0.85)`<br>`#CBD5E1` | 1px glassmorphic containment rings |
+| **Canvas / Background** | `#0B0F17`<br>`rgb(11, 15, 23)` | `#F7F4EE`<br>`rgb(247, 244, 238)` | App canvas & 3D viewport void |
+| **Primary Glass Surface** | `rgba(15, 23, 42, 0.88)`<br>(Slate-900 @ 88%) | `rgba(255, 253, 249, 0.95)`<br>(Warm White `#FFFDF9` @ 95%) | Floating HUD cards & side drawers |
+| **Secondary Chip / Tray** | `rgba(30, 41, 59, 0.70)`<br>(Slate-800 @ 70%) | `rgba(244, 239, 230, 0.95)`<br>(Soft Beige `#F4EFE6` @ 95%) | Inset inputs, tabs & data subcards |
+| **Card Borders / Dividers** | `rgba(148, 163, 184, 0.14)`<br>`#334155` | `rgba(231, 225, 214, 0.95)`<br>`#E7E1D6` | 1px warm stone containment rings |
 | **Specular Top Highlight** | `rgba(255, 255, 255, 0.12)` | `rgba(255, 255, 255, 0.95)` | Subtle 3D light reflection on cards |
-| **3D Inactive City Plates** | `#1E293B` to `#2C3B4E`<br>(Deep Architectural Slate) | `#CBD5E1` to `#DFE8F1`<br>(Warm Civic Gray) | 15 unmodeled NCR cities (Grayscale) |
-| **Text: Primary Heading** | `#F8FAFC` (Clinical White) | `#0F172A` (Ink Slate) | Brand titles, KPI numbers, city names |
-| **Text: Secondary / Labels** | `#94A3B8` (Mist Slate) | `#475569` (Charcoal Slate) | Metric units, column titles, subtitles |
-| **Text: Muted / Coordinates**| `#64748B` (Deep Mist) | `#64748B` (Muted Slate) | Lat/Lon coordinates, disclaimers |
+| **3D Inactive City Plates** | `#1E293B` to `#2C3B4E`<br>(Deep Architectural Slate) | `#DBD4C8` to `#EDE8E1`<br>(Warm Limestone Grayscale) | 15 unmodeled NCR cities |
+| **Text: Primary Heading** | `#F8FAFC` (Clinical White) | `#1C1917` (Stone-900 Warm Espresso) | Brand titles, KPI numbers, city names |
+| **Text: Secondary / Labels** | `#94A3B8` (Mist Slate) | `#57534E` (Stone-600 Warm Charcoal) | Metric units, column titles, subtitles |
+| **Text: Muted / Coordinates**| `#64748B` (Deep Mist) | `#78716C` (Stone-500 Warm Stone) | Lat/Lon coordinates, disclaimers |
 | **Dengue Solid Fill** | `#E11D48` (Rose-600) | `#E11D48` (Rose-600) | Quezon City 3D plate, active indicator |
-| **Dengue Neon Glow / Text** | `#FB7185` (Rose-400) | `#9F1239` (Rose-800) | Dark mode glow / Light mode readable text |
+| **Dengue Accent / Text** | `#FB7185` (Rose-400) | `#9F1239` (Rose-800) | Dark mode glow / Light mode readable text |
 | **Leptospirosis Solid Fill** | `#0D9488` (Teal-600) | `#0D9488` (Teal-600) | City of Manila 3D plate, active indicator |
-| **Leptospirosis Glow / Text**| `#2DD4BF` (Teal-400) | `#115E59` (Teal-800) | Dark mode glow / Light mode readable text |
+| **Leptospirosis Accent / Text**| `#2DD4BF` (Teal-400) | `#115E59` (Teal-800) | Dark mode glow / Light mode readable text |
 | **Monsoon Rain / Rivers** | `#38BDF8` (Sky-400) | `#0284C7` (Sky-600) | River channels, precipitation slider |
 | **Rain Particles (3D)** | `#7DD3FC` (Sky-300 @ 0.5) | `#0284C7` (Sky-600 @ 0.6) | 3D falling rainfall vectors |
 
@@ -55,14 +55,14 @@ Use these CSS custom properties for instant theme switching via `.dark` class:
 
 ```css
 :root {
-  /* LIGHT MODE TOKENS */
-  --daloy-bg: #F8FAFC;
-  --daloy-surface-1: rgba(255, 255, 255, 0.92);
-  --daloy-surface-2: rgba(241, 245, 249, 0.90);
-  --daloy-border: rgba(203, 213, 225, 0.85);
-  --daloy-text-primary: #0F172A;
-  --daloy-text-secondary: #475569;
-  --daloy-text-muted: #64748B;
+  /* LIGHT MODE TOKENS (WARM WHITE & SOFT BEIGE) */
+  --daloy-bg: #F7F4EE;
+  --daloy-surface-1: rgba(255, 253, 249, 0.95);
+  --daloy-surface-2: rgba(244, 239, 230, 0.95);
+  --daloy-border: #E7E1D6;
+  --daloy-text-primary: #1C1917;
+  --daloy-text-secondary: #57534E;
+  --daloy-text-muted: #78716C;
 
   --daloy-dengue-solid: #E11D48;
   --daloy-dengue-text: #9F1239;
@@ -73,7 +73,7 @@ Use these CSS custom properties for instant theme switching via `.dark` class:
   --daloy-lepto-bg: rgba(13, 148, 136, 0.10);
 
   --daloy-rain: #0284C7;
-  --daloy-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.08);
+  --daloy-shadow: 0 20px 40px -15px rgba(28, 25, 23, 0.08);
 }
 
 .dark {
@@ -103,11 +103,11 @@ Use these CSS custom properties for instant theme switching via `.dark` class:
 
 | Component | Dark Mode Classes | Light Mode Classes |
 |:---|:---|:---|
-| **Floating HUD Card** | `bg-slate-900/90 border-slate-800 text-white backdrop-blur-xl shadow-2xl` | `bg-white/90 border-slate-200 text-slate-900 backdrop-blur-xl shadow-xl` |
-| **Data Chip / Subcard** | `bg-slate-800/70 border-slate-700/60 text-slate-200` | `bg-slate-100/80 border-slate-200/60 text-slate-700` |
-| **Dengue Badge** | `bg-rose-500/20 text-rose-300 border-rose-500/40` | `bg-rose-50 text-rose-800 border-rose-200` |
-| **Lepto Badge** | `bg-teal-500/20 text-teal-300 border-teal-500/40` | `bg-teal-50 text-teal-800 border-teal-200` |
-| **Muted Legend / Out of Scope** | `bg-slate-800 text-slate-400 border-slate-700` | `bg-slate-100 text-slate-600 border-slate-300` |
+| **Floating HUD Card** | `bg-slate-900/90 border-slate-800 text-white backdrop-blur-xl shadow-2xl` | `bg-[#FFFDF9]/95 border-[#E7E1D6] text-stone-900 backdrop-blur-xl shadow-xl` |
+| **Data Chip / Subcard** | `bg-slate-800/70 border-slate-700/60 text-slate-200` | `bg-[#F4EFE6] border-[#E7E1D6] text-stone-800` |
+| **Dengue Badge** | `bg-rose-500/20 text-rose-300 border-rose-500/40` | `bg-rose-100 text-rose-900 border-rose-200` |
+| **Lepto Badge** | `bg-teal-500/20 text-teal-300 border-teal-500/40` | `bg-teal-100 text-teal-900 border-teal-200` |
+| **Muted Legend / Out of Scope** | `bg-slate-800 text-slate-400 border-slate-700` | `bg-[#F4EFE6] text-stone-700 border-[#E7E1D6]` |
 
 ---
 
