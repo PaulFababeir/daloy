@@ -8,6 +8,7 @@ from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
+from dataset.leptos.main import leptos_model
 import math
 import csv
 import io
@@ -30,13 +31,18 @@ app.add_middleware(
 )
 
 
+class LeptosPredictFeatures(BaseModel):
+    curr_month_rainfall: float
+    prev_month_rainfall: float
+    month: str
+    
+
 class PredictRequest(BaseModel):
     disease: str = Field(..., description="'dengue' or 'lepto'")
     month: int = Field(..., ge=1, le=12, description="Month 1-12")
     rain: float = Field(..., ge=0, description="Monthly rainfall in mm")
     prev_rain: Optional[float] = Field(None, ge=0, description="Previous month rainfall in mm")
-    n_weeks: Optional[int] = Field(4, ge=4, le=5, description="Case weeks in month")
-
+    n_weeks: Optional[int] = Field(4, ge=4, le=5, description="Case weeks in month")    
 
 class PredictResponse(BaseModel):
     disease: str
@@ -62,6 +68,10 @@ class PredictResponse(BaseModel):
     flood_zones: List[Dict[str, Any]]
 
 
+@app.get("/api/predict/leptos")
+def predict_leptos(features: LeptosPredictFeatures):
+    return leptos_model(features.curr_month_rainfall, features.prev_month_rainfall, features.month)
+    
 @app.get("/api/health")
 def health_check():
     return {
