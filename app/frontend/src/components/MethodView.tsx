@@ -15,10 +15,10 @@ export const MethodView: React.FC = () => {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
-            <div className="p-2.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 w-fit mb-3">
+            <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-teal-950/60 text-slate-800 dark:text-teal-400 w-fit mb-3">
               <Database className="w-5 h-5" />
             </div>
-            <div className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+            <div className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-teal-400">
               Step 1 · Collect
             </div>
             <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-1">
@@ -137,7 +137,7 @@ export const MethodView: React.FC = () => {
 
         <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
           <div className="flex items-center gap-2 mb-3">
-            <BookOpen className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+            <BookOpen className="w-5 h-5 text-slate-700 dark:text-teal-400" />
             <h4 className="text-sm font-bold text-slate-900 dark:text-white">
               Key Academic &amp; Clinical Citations
             </h4>

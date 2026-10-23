@@ -265,7 +265,7 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
 
         {/* Right Column: Upload Zone and Live Analysis */}
         <div className="lg:col-span-7 space-y-6">
-          <div className="p-8 rounded-3xl bg-white dark:bg-slate-900 border-2 border-dashed border-slate-300 dark:border-slate-700 text-center relative hover:border-teal-500 transition">
+          <div className="p-8 rounded-3xl bg-slate-50/70 dark:bg-slate-900 border-2 border-dashed border-slate-300 dark:border-slate-700 text-center relative hover:border-slate-400 dark:hover:border-teal-500 transition">
             <input
               type="file"
               accept=".csv"
@@ -273,7 +273,7 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
               className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
             />
             <div className="flex flex-col items-center justify-center pointer-events-none">
-              <div className="p-4 rounded-full bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400 mb-3">
+              <div className="p-4 rounded-full bg-slate-200/80 dark:bg-teal-950/60 text-slate-700 dark:text-teal-400 mb-3">
                 <UploadCloud className="w-8 h-8" />
               </div>
               <p className="text-sm font-bold text-slate-800 dark:text-slate-200">
@@ -287,7 +287,7 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
 
           {isLoading && (
             <div className="flex items-center justify-center p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-500 gap-2 text-sm">
-              <RefreshCw className="w-4 h-4 animate-spin text-teal-600" />
+              <RefreshCw className="w-4 h-4 animate-spin text-slate-600 dark:text-teal-400" />
               Validating schema and computing correlation...
             </div>
           )}
@@ -328,7 +328,7 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800">
                       <span className="text-xs text-slate-500">Spearman Rank ρ</span>
-                      <div className="text-xl font-extrabold font-mono text-teal-600 dark:text-teal-400 mt-1">
+                      <div className="text-xl font-extrabold font-mono text-slate-900 dark:text-teal-400 mt-1">
                         +{validationResult.spearman_rho}
                       </div>
                       <span className="text-[10px] text-slate-400">Rain-case correlation</span>

@@ -172,7 +172,9 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
               step={10}
               value={rainfall}
               onChange={e => onRainfallChange(Number(e.target.value))}
-              className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500"
+              className={`w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer ${
+                activeDisease === 'dengue' ? 'accent-rose-600' : 'accent-teal-700 dark:accent-teal-500'
+              }`}
             />
 
             <div className="grid grid-cols-4 gap-1.5 mt-2.5">
@@ -196,7 +198,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
               </button>
               <button
                 onClick={() => handlePreset(2.6, 680)}
-                className="px-2 py-1 text-[11px] font-bold rounded-lg bg-rose-500/15 text-rose-600 dark:text-rose-300 border border-rose-500/30 hover:bg-rose-500/25 transition"
+                className="px-2 py-1 text-[11px] font-bold rounded-lg bg-rose-50 text-rose-800 border border-rose-200 hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-300 dark:border-rose-500/30 dark:hover:bg-rose-500/25 transition"
               >
                 Typhoon
               </button>
@@ -208,10 +210,10 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
             <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800 space-y-3">
               <div>
                 <div className="flex items-center justify-between mb-1">
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-teal-400">
                     Last Month&apos;s Rainfall
                   </label>
-                  <span className="text-xs font-mono font-bold text-teal-600 dark:text-teal-300">
+                  <span className="text-xs font-mono font-bold text-slate-800 dark:text-teal-300">
                     {prevRain} mm
                   </span>
                 </div>
@@ -222,7 +224,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
                   step={10}
                   value={prevRain}
                   onChange={e => onPrevRainChange(Number(e.target.value))}
-                  className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-500"
+                  className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-teal-700 dark:accent-teal-500"
                 />
               </div>
 
@@ -237,7 +239,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
                       onClick={() => onNWeeksChange(w)}
                       className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
                         nWeeks === w
-                          ? 'bg-teal-600 text-white'
+                          ? 'bg-slate-900 text-white dark:bg-teal-600'
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                       }`}
                     >
@@ -314,10 +316,10 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     inspectedCity.focusId === 'dengue'
-                      ? 'bg-rose-500/20 text-rose-600 dark:text-rose-300'
+                      ? 'bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/30'
                       : inspectedCity.focusId === 'lepto'
-                      ? 'bg-teal-500/20 text-teal-600 dark:text-teal-300'
-                      : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                      ? 'bg-teal-50 text-teal-800 border border-teal-200 dark:bg-teal-500/20 dark:text-teal-300 dark:border-teal-500/30'
+                      : 'bg-slate-100 text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
                   }`}
                 >
                   {inspectedCity.isFocus ? 'In Model Scope' : 'Grayscale · Out of Scope'}
@@ -343,7 +345,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
               {!inspectedCity.isFocus && (
                 <button
                   onClick={onOpenUploadForCity}
-                  className="w-full mt-1 py-2 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition"
+                  className="w-full mt-1 py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-bold flex items-center justify-center gap-1.5 transition dark:bg-slate-800 dark:hover:bg-slate-700 shadow-sm"
                 >
                   <UploadCloud className="w-3.5 h-3.5 text-amber-400" />
                   <span>Upload CSV for {inspectedCity.name}</span>
@@ -516,11 +518,11 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
 
       {/* FLOATING ANALYTICS, FLOOD ZONES & LGU ACTIONS MODAL OVERLAY */}
       {showAnalyticsModal && result && (
-        <div className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 pointer-events-auto">
+        <div className="fixed inset-0 z-40 bg-slate-900/40 dark:bg-slate-950/70 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 pointer-events-auto">
           <div className="w-full max-w-5xl max-h-[88vh] overflow-y-auto rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-6 sm:p-8 space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
               <div>
-                <span className="text-xs font-bold uppercase tracking-wider text-teal-600 dark:text-teal-400">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-teal-400">
                   Deep-Dive Analytics &amp; Response Protocol
                 </span>
                 <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">
@@ -565,7 +567,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
 
               <div className="p-6 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
                 <div className="flex items-center gap-2.5 mb-4">
-                  <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-600 dark:text-teal-400">
+                  <div className="p-2 rounded-xl bg-slate-100 dark:bg-teal-950/60 text-slate-800 dark:text-teal-400">
                     <ShieldAlert className="w-5 h-5" />
                   </div>
                   <div>
@@ -584,7 +586,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
                       key={i}
                       className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-start gap-3"
                     >
-                      <span className="px-2 py-1 rounded-lg bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300 font-mono font-bold text-xs shrink-0">
+                      <span className="px-2 py-1 rounded-lg bg-slate-200 dark:bg-teal-950 text-slate-800 dark:text-teal-300 font-mono font-bold text-xs shrink-0">
                         {act.i}
                       </span>
                       <div>
