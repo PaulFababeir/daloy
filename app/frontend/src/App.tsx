@@ -258,7 +258,7 @@ export const App: React.FC = () => {
 
       {/* FLOATING MODAL OVERLAY FOR "YOUR CITY CSV" VIEW */}
       {activeView === 'upload' && (
-        <div className="fixed inset-0 z-30 bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4 pt-20 pb-16 pointer-events-auto">
+        <div className="fixed inset-0 z-30 bg-slate-900/35 dark:bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 pt-20 pb-16 pointer-events-auto">
           <div className="w-full max-w-5xl max-h-full overflow-y-auto rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 sm:p-8 relative">
             <button
               onClick={() => setActiveView('predict')}
@@ -273,7 +273,7 @@ export const App: React.FC = () => {
 
       {/* FLOATING MODAL OVERLAY FOR "METHOD & DATA" VIEW */}
       {activeView === 'method' && (
-        <div className="fixed inset-0 z-30 bg-slate-950/45 backdrop-blur-sm flex items-center justify-center p-4 pt-20 pb-16 pointer-events-auto">
+        <div className="fixed inset-0 z-30 bg-slate-900/35 dark:bg-slate-950/60 backdrop-blur-md flex items-center justify-center p-4 pt-20 pb-16 pointer-events-auto">
           <div className="w-full max-w-5xl max-h-full overflow-y-auto rounded-3xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-2xl p-6 sm:p-8 relative">
             <button
               onClick={() => setActiveView('predict')}
