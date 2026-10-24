@@ -351,11 +351,7 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({
           });
         }
         setIsLoading(false);
-        if (onViewOnMap && extractedHistory.length > 0) {
-          setTimeout(() => {
-            onViewOnMap(effectiveCity, finalDisease);
-          }, 450);
-        }
+        return;
       }
     } catch {
       // Offline fallback client validator
@@ -430,11 +426,6 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({
       });
     }
     setIsLoading(false);
-    if (onViewOnMap && extractedHistory.length > 0) {
-      setTimeout(() => {
-        onViewOnMap(effectiveCity, activeDiseaseKey);
-      }, 450);
-    }
   };
 
   return (
@@ -631,70 +622,205 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Upload Zone and Live Analysis */}
-        <div className="lg:col-span-7 space-y-6">
-          <div className={`p-8 rounded-3xl border-2 border-dashed text-center relative transition ${
-            isDark
-              ? 'bg-slate-900 border-slate-700 hover:border-teal-500'
-              : 'bg-[#F4EFE6]/60 border-[#DBD4C8] hover:border-stone-500'
-          }`}>
-            <input
-              type="file"
-              accept=".csv"
-              onChange={handleFileChange}
-              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-            />
-            <div className="flex flex-col items-center justify-center pointer-events-none">
-              <div className={`p-4 rounded-full mb-3 ${
-                isDark ? 'bg-teal-950/60 text-teal-400' : 'bg-[#EBE4D8] text-stone-700'
-              }`}>
-                <UploadCloud className="w-8 h-8" />
+        {/* Right Column: Step 1 Select City, Step 2 Upload CSV, and Show on 3D Map */}
+        <div className="lg:col-span-7 space-y-5">
+          {/* STEP 1: Select Target City First */}
+          <div className={`p-5 rounded-3xl border space-y-3.5 shadow-sm transition-colors ${cardCls}`}>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2.5">
+                <span className="w-6 h-6 rounded-full bg-teal-500 text-slate-950 text-xs font-black flex items-center justify-center shrink-0">
+                  1
+                </span>
+                <div>
+                  <h3 className={`text-sm font-extrabold uppercase tracking-wider ${headingCls}`}>
+                    Step 1: Select Target City First
+                  </h3>
+                  <p className={`text-[11px] ${mutedCls}`}>
+                    Choose the Metro Manila LGU before uploading your surveillance data
+                  </p>
+                </div>
               </div>
-              <p className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-stone-800'}`}>
-                {file ? file.name : 'Drop your city CSV here or click to browse'}
-              </p>
-              <p className={`text-xs mt-1 ${mutedCls}`}>
-                CSV format only · Maximum 10MB
-              </p>
+
+              <span className={`text-[11px] font-bold px-3 py-1 rounded-full border ${
+                disease === 'dengue'
+                  ? 'bg-rose-500/15 text-rose-400 border-rose-500/30'
+                  : 'bg-teal-500/15 text-teal-400 border-teal-500/30'
+              }`}>
+                Target: <strong className="underline ml-0.5">{targetCity}</strong>
+              </span>
+            </div>
+
+            {/* Quick-Pick Popular City Buttons */}
+            <div>
+              <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1.5 ${mutedCls}`}>
+                Quick select popular cities:
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {['Makati', 'City of Manila', 'Quezon City', 'Pasig', 'Taguig', 'Caloocan', 'Mandaluyong'].map(cName => {
+                  const isSelected = targetCity === cName;
+                  return (
+                    <button
+                      key={cName}
+                      type="button"
+                      onClick={() => handleTargetCityChange(cName)}
+                      className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition cursor-pointer ${
+                        isSelected
+                          ? disease === 'dengue'
+                            ? 'bg-[#E11D48] text-white border-rose-500 shadow-md ring-2 ring-rose-500/30'
+                            : 'bg-[#0D9488] text-white border-teal-500 shadow-md ring-2 ring-teal-500/30'
+                          : isDark
+                          ? 'bg-slate-800 text-slate-300 border-slate-700 hover:text-white hover:bg-slate-700'
+                          : 'bg-[#F4EFE6] text-stone-700 border-[#E7E1D6] hover:text-stone-900'
+                      }`}
+                    >
+                      {cName}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* All 17 Cities Dropdown */}
+            <div className="pt-0.5">
+              <label className={`block text-[10px] font-bold uppercase tracking-wider mb-1 ${mutedCls}`}>
+                Or choose any of the 17 Metro Manila LGUs:
+              </label>
+              <select
+                value={targetCity}
+                onChange={e => handleTargetCityChange(e.target.value)}
+                className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold border focus:outline-none transition ${
+                  isDark
+                    ? 'bg-slate-800 border-slate-700 text-white focus:border-teal-500'
+                    : 'bg-[#F4EFE6] border-[#E7E1D6] text-stone-900 focus:border-stone-500'
+                }`}
+              >
+                {METRO_MANILA_CITIES.map(c => (
+                  <option key={c.name} value={c.name}>
+                    {c.name} ({c.district})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* STEP 2: Upload CSV for Selected City */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <span className="w-6 h-6 rounded-full bg-teal-500 text-slate-950 text-xs font-black flex items-center justify-center shrink-0">
+                  2
+                </span>
+                <h3 className={`text-sm font-extrabold uppercase tracking-wider ${headingCls}`}>
+                  Step 2: Upload CSV File for {targetCity}
+                </h3>
+              </div>
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${isDark ? 'bg-slate-800 text-slate-300' : 'bg-stone-200 text-stone-700'}`}>
+                {disease === 'dengue' ? 'Dengue Schema' : 'Lepto Schema'}
+              </span>
+            </div>
+
+            <div className={`p-8 rounded-3xl border-2 border-dashed text-center relative transition ${
+              isDark
+                ? 'bg-slate-900 border-slate-700 hover:border-teal-500'
+                : 'bg-[#F4EFE6]/60 border-[#DBD4C8] hover:border-stone-500'
+            }`}>
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleFileChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <div className="flex flex-col items-center justify-center pointer-events-none">
+                <div className={`p-4 rounded-full mb-3 ${
+                  isDark ? 'bg-teal-950/60 text-teal-400' : 'bg-[#EBE4D8] text-stone-700'
+                }`}>
+                  <UploadCloud className="w-8 h-8" />
+                </div>
+                <p className={`text-sm font-bold ${isDark ? 'text-slate-200' : 'text-stone-800'}`}>
+                  {file ? file.name : `Drop your ${targetCity} CSV here or click to browse`}
+                </p>
+                <p className={`text-xs mt-1 ${mutedCls}`}>
+                  CSV format · Auto-detects columns · Minimum 12-24 monthly rows
+                </p>
+              </div>
             </div>
           </div>
 
           {isLoading && (
             <div className={`flex items-center justify-center p-6 rounded-2xl border gap-2 text-sm ${cardCls}`}>
               <RefreshCw className={`w-4 h-4 animate-spin ${isDark ? 'text-teal-400' : 'text-stone-700'}`} />
-              <span className={mutedCls}>Validating schema and computing correlation...</span>
+              <span className={mutedCls}>Validating schema and computing correlation for {targetCity}...</span>
             </div>
           )}
 
+          {/* Validation & Show City on 3D Map Section */}
           {validationResult && (
             <div className={`p-6 rounded-3xl border space-y-6 ${cardCls}`}>
+              {/* PRIMARY PROMINENT CALL-TO-ACTION BANNER & BUTTON */}
+              {onViewOnMap && (validationResult.row_count > 0 || parsedHistory.length > 0) && (
+                <div className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl transition-all ${
+                  disease === 'dengue'
+                    ? isDark ? 'bg-gradient-to-r from-rose-950/70 to-rose-900/40 border-rose-500/50 text-rose-100' : 'bg-rose-50 border-rose-300 text-rose-950'
+                    : isDark ? 'bg-gradient-to-r from-teal-950/70 to-teal-900/40 border-teal-500/50 text-teal-100' : 'bg-teal-50 border-teal-300 text-teal-950'
+                }`}>
+                  <div className="space-y-1">
+                    <div className="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      <span>{targetCity} Surveillance Data Loaded</span>
+                    </div>
+                    <h3 className="text-base font-extrabold flex items-center gap-2">
+                      <span>{targetCity}</span>
+                      <span className="text-xs font-normal opacity-85">({disease === 'dengue' ? 'Dengue' : 'Leptospirosis'} Layer)</span>
+                    </h3>
+                    <p className="text-xs opacity-85">
+                      {validationResult.row_count || parsedHistory.length} monthly records parsed · Spearman correlation ρ = {validationResult.spearman_rho >= 0 ? `+${validationResult.spearman_rho}` : validationResult.spearman_rho}
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => onViewOnMap(targetCity, disease)}
+                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-2xl text-sm font-extrabold transition shadow-xl shrink-0 cursor-pointer hover:scale-105 active:scale-95 ${
+                      disease === 'dengue'
+                        ? 'bg-[#E11D48] hover:bg-rose-500 text-white shadow-rose-500/30'
+                        : 'bg-[#0D9488] hover:bg-teal-500 text-white shadow-teal-500/30'
+                    }`}
+                  >
+                    <span>Show {targetCity} on 3D Map</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+
+              {/* Status Header */}
               <div className={`flex items-center justify-between pb-4 border-b ${borderCls}`}>
                 <div className="flex items-center gap-2.5">
                   {validationResult.valid ? (
                     <CheckCircle className="w-5 h-5 text-emerald-600" />
                   ) : (
-                    <AlertCircle className="w-5 h-5 text-rose-600" />
+                    <AlertCircle className="w-5 h-5 text-amber-500" />
                   )}
                   <h4 className={`text-base font-bold ${headingCls}`}>
-                    {validationResult.valid ? 'File Validated Successfully' : 'Validation Issues Detected'}
+                    {validationResult.valid ? 'File Validated Successfully' : 'Data Parsed (Review Notices)'}
                   </h4>
                 </div>
                 <span className={`text-xs font-mono font-bold ${mutedCls}`}>
-                  {validationResult.row_count} monthly rows parsed
+                  {validationResult.row_count || parsedHistory.length} monthly rows
                 </span>
               </div>
 
+              {/* Notices / Warnings */}
               {validationResult.errors && validationResult.errors.length > 0 && (
                 <div className={`p-4 rounded-2xl border space-y-2 ${
                   isDark
-                    ? 'bg-rose-950/40 border-rose-800 text-rose-300'
-                    : 'bg-rose-50 border-rose-200 text-rose-800'
+                    ? 'bg-amber-950/40 border-amber-800 text-amber-300'
+                    : 'bg-amber-50 border-amber-200 text-amber-800'
                 }`}>
                   <span className="text-xs font-bold">
-                    Fix the following:
+                    Surveillance Notice:
                   </span>
                   <ul className={`list-disc list-inside text-xs space-y-1 ${
-                    isDark ? 'text-rose-400' : 'text-rose-700'
+                    isDark ? 'text-amber-400' : 'text-amber-700'
                   }`}>
                     {validationResult.errors.map((err: string, i: number) => (
                       <li key={i}>{err}</li>
@@ -703,38 +829,9 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({
                 </div>
               )}
 
-              {validationResult.valid && (
+              {/* Summary Stats Cards */}
+              {(validationResult.row_count > 0 || parsedHistory.length > 0) && (
                 <>
-                  <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
-                    disease === 'dengue'
-                      ? isDark ? 'bg-rose-950/40 border-rose-500/40 text-rose-100' : 'bg-rose-50 border-rose-200 text-rose-900'
-                      : isDark ? 'bg-teal-950/40 border-teal-500/40 text-teal-100' : 'bg-teal-50 border-teal-200 text-teal-900'
-                  }`}>
-                    <div className="space-y-0.5">
-                      <div className="text-xs font-extrabold flex items-center gap-1.5">
-                        <span className={`w-2.5 h-2.5 rounded-sm ${disease === 'dengue' ? 'bg-[#E11D48]' : 'bg-[#0D9488]'}`} />
-                        <span>{targetCity} added to {disease === 'dengue' ? 'Dengue' : 'Leptospirosis'} 3D Map Layer</span>
-                      </div>
-                      <p className="text-[11px] opacity-85">
-                        {targetCity} will now highlight with full 3D elevation &amp; barangay grids alongside {disease === 'dengue' ? 'Quezon City' : 'City of Manila'}.
-                      </p>
-                    </div>
-                    {onViewOnMap && (
-                      <button
-                        type="button"
-                        onClick={() => onViewOnMap(targetCity, disease)}
-                        className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold shrink-0 transition shadow-md ${
-                          disease === 'dengue'
-                            ? 'bg-[#E11D48] hover:bg-rose-500 text-white'
-                            : 'bg-[#0D9488] hover:bg-teal-500 text-white'
-                        }`}
-                      >
-                        <span>Visualize {targetCity} on Map</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
-
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <div className={`p-4 rounded-2xl border ${insetCls}`}>
                       <span className={`text-xs ${mutedCls}`}>Spearman Rank ρ</span>
@@ -757,23 +854,27 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({
                       <div className={`text-xl font-extrabold font-mono mt-1 ${isDark ? 'text-slate-200' : 'text-stone-900'}`}>
                         {validationResult.summary?.total_cases?.toLocaleString()}
                       </div>
-                      <span className="text-[10px] opacity-75">Across dataset</span>
+                      <span className="text-[10px] opacity-75">Historical sum</span>
                     </div>
                   </div>
 
-                  {/* 5-row preview table */}
+                  {/* Preview First 5 Records */}
                   {validationResult.preview && validationResult.preview.length > 0 && (
-                    <div>
-                      <span className={`text-xs font-bold uppercase tracking-wider block mb-2 ${mutedCls}`}>
-                        Data Preview (First 5 Rows)
-                      </span>
-                      <div className={`overflow-x-auto rounded-xl border ${borderCls}`}>
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className={`text-xs font-bold uppercase tracking-wider ${mutedCls}`}>
+                          First 5 Surveillance Records ({targetCity})
+                        </span>
+                        <span className={`text-[10px] font-mono ${mutedCls}`}>Preview</span>
+                      </div>
+
+                      <div className={`rounded-xl border overflow-x-auto ${borderCls}`}>
                         <table className="w-full text-left text-xs font-mono">
-                          <thead className={isDark ? 'bg-slate-800 text-slate-300' : 'bg-[#F4EFE6] text-stone-700'}>
+                          <thead className={insetCls}>
                             <tr>
-                              {Object.keys(validationResult.preview[0]).map(k => (
-                                <th key={k} className="p-2.5 font-bold">
-                                  {k}
+                              {Object.keys(validationResult.preview[0]).map(h => (
+                                <th key={h} className="p-2.5 font-bold">
+                                  {h}
                                 </th>
                               ))}
                             </tr>
@@ -791,6 +892,23 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({
                           </tbody>
                         </table>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Secondary Bottom Button to Show on Map */}
+                  {onViewOnMap && (
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => onViewOnMap(targetCity, disease)}
+                        className={`inline-flex items-center gap-2 px-6 py-2.5 rounded-xl text-xs font-extrabold transition shadow-md cursor-pointer ${
+                          disease === 'dengue'
+                            ? 'bg-[#E11D48] hover:bg-rose-500 text-white'
+                            : 'bg-[#0D9488] hover:bg-teal-500 text-white'
+                        }`}
+                      >
+                        <span>Show {targetCity} on 3D Map →</span>
+                      </button>
                     </div>
                   )}
                 </>
