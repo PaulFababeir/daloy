@@ -75,7 +75,7 @@ class PredictResponse(BaseModel):
     history_points: Optional[List[Dict[str, Any]]] = None
 
 
-UPLOAD_DIR = Path("temp_uploads")
+UPLOAD_DIR = Path(__file__).resolve().parent / "temp_uploads"
 UPLOAD_DIR.mkdir(exist_ok=True)
 
 
@@ -291,11 +291,19 @@ async def upload_csv(
             detail="Uploaded file contains no data rows."
         )
 
+    # Auto-detect disease if CSV matches the other disease's schema
+    dengue_cols = ['YR', 'MN', 'DC_QC', 'RF_NASA', 'n_weeks']
+    lepto_cols = ['month', 'lepto', 'rain_total_mm', 'n_weeks']
+    if all(c in df.columns for c in lepto_cols):
+        key = 'lepto'
+    elif all(c in df.columns for c in dengue_cols):
+        key = 'dengue'
+
     # Validate expected columns
     expected_cols = (
-        ['YR', 'MN', 'DC_QC', 'RF_NASA', 'n_weeks']
+        dengue_cols
         if key == 'dengue'
-        else ['month', 'lepto', 'rain_total_mm', 'n_weeks']
+        else lepto_cols
     )
 
     missing = [c for c in expected_cols if c not in df.columns]
@@ -375,6 +383,8 @@ async def upload_csv(
 
     return {
         "valid": len(errors) == 0,
+        "disease": key,
+        "city": city,
         "row_count": len(parsed_df),
         "errors": errors[:5],
         "spearman_rho": rho,

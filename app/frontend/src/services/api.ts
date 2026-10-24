@@ -5,12 +5,25 @@
  * and manila_lepto_monthly.csv (2001–2012).
  */
 
+export interface UploadedCityData {
+  cityName: string;
+  disease: 'dengue' | 'lepto';
+  fileName: string;
+  rowCount: number;
+  spearmanRho: number;
+  meanRainfall: number;
+  meanCases: number;
+  totalCases: number;
+  historyPoints: HistoricalPoint[];
+}
+
 export interface PredictPayload {
   disease: 'dengue' | 'lepto';
   month: number;
   rain: number;
   prev_rain?: number;
   n_weeks?: number;
+  customCity?: UploadedCityData | null;
 }
 
 export interface SimilarMonth {
@@ -222,22 +235,39 @@ class LocalEngine {
     return Math.max(0, rate * (nWeeks || 4));
   }
 
-  baseline(key: 'dengue' | 'lepto', month: number) {
-    const hist = key === 'dengue' ? this.dengueHistory : this.leptoHistory;
+  baseline(key: 'dengue' | 'lepto', month: number, customHistory?: HistoricalPoint[]) {
+    const hist = customHistory && customHistory.length > 0
+      ? customHistory
+      : key === 'dengue' ? this.dengueHistory : this.leptoHistory;
     const list = hist.filter(d => d.month === month).map(d => d.cases);
-    return list.reduce((s, v) => s + v, 0) / (list.length || 1);
+    if (list.length === 0) {
+      const allCases = hist.map(d => d.cases);
+      return allCases.reduce((s, v) => s + v, 0) / (allCases.length || 1);
+    }
+    return list.reduce((s, v) => s + v, 0) / list.length;
   }
 
-  typical(key: 'dengue' | 'lepto', month: number) {
-    const hist = key === 'dengue' ? this.dengueHistory : this.leptoHistory;
+  typical(key: 'dengue' | 'lepto', month: number, customHistory?: HistoricalPoint[]) {
+    const hist = customHistory && customHistory.length > 0
+      ? customHistory
+      : key === 'dengue' ? this.dengueHistory : this.leptoHistory;
     const sorted = hist.filter(d => d.month === month).map(d => d.rain).sort((a, b) => a - b);
     return sorted[Math.floor(sorted.length / 2)] || 0;
   }
 
-  similar(key: 'dengue' | 'lepto', rain: number, prev: number | null, month: number, k = 4): SimilarMonth[] {
+  similar(
+    key: 'dengue' | 'lepto',
+    rain: number,
+    prev: number | null,
+    month: number,
+    k = 4,
+    customHistory?: HistoricalPoint[]
+  ): SimilarMonth[] {
     const rStd = key === 'dengue' ? this.dengueRainStd : this.leptoRainStd;
     const qPrev = prev !== null ? prev : rain;
-    const hist = key === 'dengue' ? this.dengueHistory : this.leptoHistory;
+    const hist = customHistory && customHistory.length > 0
+      ? customHistory
+      : key === 'dengue' ? this.dengueHistory : this.leptoHistory;
 
     return hist
       .map(d => {
@@ -495,62 +525,71 @@ export async function fetchPrediction(payload: PredictPayload): Promise<Predicti
   const prev = payload.prev_rain !== undefined ? payload.prev_rain : rain;
   const month = payload.month;
   const nWeeks = payload.n_weeks || 4;
+  const customCity = payload.customCity && payload.customCity.disease === key ? payload.customCity : null;
+  const customHist = customCity?.historyPoints && customCity.historyPoints.length > 0
+    ? customCity.historyPoints
+    : undefined;
 
-  try {
-    const res = await fetch('/api/predict', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+  if (!customCity) {
+    try {
+      const res = await fetch('/api/predict', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-    if (res.ok) {
-      const data = await res.json();
-      const meta = buildPresentationMetadata(
-        key,
-        data.predicted_cases,
-        data.n_weeks || nWeeks,
-        data.month_name || MONTH_NAMES[month - 1],
-        data.baseline_cases,
-        data.ratio_to_baseline,
-        data.pct_diff_baseline,
-        data.level_id
-      );
-      return {
-        ...data,
-        raw_model_output: [data.predicted_cases],
-        model_name:
-          key === 'dengue'
-            ? 'PoissonRegressor (Log-Link GLM)'
-            : 'HistGradientBoostingRegressor (Poisson)',
-        weekly_rate: meta.weeklyRate,
-        takeaway_title: meta.takeawayTitle,
-        takeaway_body: meta.takeawayBody,
-        actions: meta.actions,
-        response_curve: localFallback.buildResponseCurve(
+      if (res.ok) {
+        const data = await res.json();
+        const meta = buildPresentationMetadata(
           key,
-          rain,
-          prev,
-          month,
-          nWeeks,
           data.predicted_cases,
-          data.history_points
-        ),
-        seasonal_profile: localFallback.buildSeasonalProfile(key, data.history_points),
-        is_live_backend: true
-      };
+          data.n_weeks || nWeeks,
+          data.month_name || MONTH_NAMES[month - 1],
+          data.baseline_cases,
+          data.ratio_to_baseline,
+          data.pct_diff_baseline,
+          data.level_id
+        );
+        return {
+          ...data,
+          raw_model_output: [data.predicted_cases],
+          model_name:
+            key === 'dengue'
+              ? 'PoissonRegressor (Log-Link GLM)'
+              : 'HistGradientBoostingRegressor (Poisson)',
+          weekly_rate: meta.weeklyRate,
+          takeaway_title: meta.takeawayTitle,
+          takeaway_body: meta.takeawayBody,
+          actions: meta.actions,
+          response_curve: localFallback.buildResponseCurve(
+            key,
+            rain,
+            prev,
+            month,
+            nWeeks,
+            data.predicted_cases,
+            data.history_points
+          ),
+          seasonal_profile: localFallback.buildSeasonalProfile(key, data.history_points),
+          is_live_backend: true
+        };
+      }
+    } catch {
+      // Backend unreachable, run seamless local engine fallback
     }
-  } catch {
-    // Backend unreachable, run seamless local engine fallback
   }
 
-  const rawPred = localFallback.predictRaw(key, rain, prev, month, nWeeks);
+  // Scale prediction to custom city's historical baseline if custom city CSV is active
+  const defaultBase = localFallback.baseline(key, month);
+  const base = localFallback.baseline(key, month, customHist);
+  const cityScale = customHist && defaultBase > 0 ? base / defaultBase : 1.0;
+  const rawPred = localFallback.predictRaw(key, rain, prev, month, nWeeks) * cityScale;
   const cases = Math.max(0, Math.round(rawPred));
   const weeklyRate = Math.round((rawPred / Math.max(1, nWeeks)) * 10) / 10;
   const margin = 1.96 * Math.sqrt(rawPred);
   const lo = Math.max(0, Math.round(rawPred - margin));
   const hi = Math.max(lo, Math.round(rawPred + margin));
 
-  const base = localFallback.baseline(key, month);
   const ratio = base > 0 ? rawPred / base : 1.0;
   const pctDiff = Math.round((ratio - 1.0) * 100);
 
@@ -561,58 +600,59 @@ export async function fetchPrediction(payload: PredictPayload): Promise<Predicti
   else if (ratio <= 1.6) { levelId = 'up'; levelLabel = 'Above typical'; }
   else { levelId = 'high'; levelLabel = 'Well above typical'; }
 
-  const tRain = localFallback.typical(key, month);
+  const tRain = localFallback.typical(key, month, customHist);
   const mName = MONTH_NAMES[month - 1];
   const rainCmp = rain > tRain * 1.15 ? 'more' : rain < tRain * 0.85 ? 'less' : 'about the same';
+  const displayCityName = customCity ? customCity.cityName : (key === 'dengue' ? 'Quezon City' : 'Manila');
 
   let whyText = '';
   let effectText = '';
   let takeawayTitle = '';
   let takeawayBody = '';
 
-  const tPrev = localFallback.typical(key, month === 1 ? 12 : month - 1);
+  const tPrev = localFallback.typical(key, month === 1 ? 12 : month - 1, customHist);
 
   if (key === 'dengue') {
     whyText = `This month: ${Math.round(rain).toLocaleString()} mm (${
       rainCmp === 'about the same' ? 'about the usual' : rainCmp + ' than the usual'
-    } ${mName} median of ${Math.round(tRain).toLocaleString()} mm in Quezon City). Last month: ${Math.round(prev).toLocaleString()} mm (median ${Math.round(tPrev).toLocaleString()} mm). Both months' rainfall and seasonal cycle drive Aedes larval habitat proliferation.`;
-    const up = localFallback.predictRaw(key, rain + 100, prev, month, nWeeks);
-    const eff = Math.round((up / rawPred - 1.0) * 100);
+    } ${mName} median of ${Math.round(tRain).toLocaleString()} mm in ${displayCityName}). Last month: ${Math.round(prev).toLocaleString()} mm (median ${Math.round(tPrev).toLocaleString()} mm). Both months' rainfall and seasonal cycle drive Aedes larval habitat proliferation.`;
+    const up = localFallback.predictRaw(key, rain + 100, prev, month, nWeeks) * cityScale;
+    const eff = rawPred > 0 ? Math.round((up / rawPred - 1.0) * 100) : 0;
     effectText = `At this level, +100 mm of extra rain adds ~${eff}% more cases (+${Math.max(0, Math.round(up - rawPred))} cases).`;
 
     if (levelId === 'high') {
       takeawayTitle = `Outbreak Surge Warning · ${ratio.toFixed(1)}x Typical ${mName} Load`;
-      takeawayBody = `Expect ~${weeklyRate} dengue admissions/week (${cases.toLocaleString()} total). Rapid larval proliferation in flood basins will peak hospital demand within 10–14 days.`;
+      takeawayBody = `Expect ~${weeklyRate} dengue admissions/week (${cases.toLocaleString()} total in ${displayCityName}). Rapid larval proliferation in flood basins will peak hospital demand within 10–14 days.`;
     } else if (levelId === 'up') {
       takeawayTitle = `Elevated Transmission · +${pctDiff}% Above ${mName} Mean`;
-      takeawayBody = `Model projects ~${weeklyRate} cases/week across ${nWeeks} weeks. Pre-emptive barangay 4S cleanups in Tatalon and Bagong Silangan are needed to cap transmission.`;
+      takeawayBody = `Model projects ~${weeklyRate} cases/week across ${nWeeks} weeks in ${displayCityName}. Pre-emptive barangay 4S cleanups are needed to cap transmission.`;
     } else if (levelId === 'low') {
       takeawayTitle = `Below Typical Baseline · ${Math.abs(pctDiff)}% Lower Than Usual`;
-      takeawayBody = `Projected load (~${weeklyRate} cases/week) is well within routine clinic capacity. Maintain baseline larviciding in perennial drainage pockets.`;
+      takeawayBody = `Projected load (~${weeklyRate} cases/week) is well within routine clinic capacity in ${displayCityName}. Maintain baseline larviciding in perennial drainage pockets.`;
     } else {
       takeawayTitle = `Typical Seasonal Burden · Near ${mName} Average (${Math.round(base).toLocaleString()} cases)`;
-      takeawayBody = `Expect ~${weeklyRate} cases/week (${cases.toLocaleString()} monthly total), matching historical ${mName} patterns in Quezon City.`;
+      takeawayBody = `Expect ~${weeklyRate} cases/week (${cases.toLocaleString()} monthly total), matching historical ${mName} patterns in ${displayCityName}.`;
     }
   } else {
-    whyText = `This month: ${Math.round(rain).toLocaleString()} mm (median ${Math.round(tRain).toLocaleString()} mm) · Last month: ${Math.round(prev).toLocaleString()} mm (median ${Math.round(tPrev).toLocaleString()} mm). Both months drive soil saturation and street flood wading exposure.`;
+    whyText = `This month: ${Math.round(rain).toLocaleString()} mm (median ${Math.round(tRain).toLocaleString()} mm in ${displayCityName}) · Last month: ${Math.round(prev).toLocaleString()} mm (median ${Math.round(tPrev).toLocaleString()} mm). Both months drive soil saturation and street flood wading exposure.`;
     effectText = `ML Model Output: [${cases.toFixed(1)}] → ${cases} cases (~${weeklyRate} cases/week × ${nWeeks} weeks).`;
 
     if (levelId === 'high') {
       takeawayTitle = `High Flood-Exposure Surge · ${ratio.toFixed(1)}x Normal ${mName} Risk`;
-      takeawayBody = `Model predicts ${cases.toLocaleString()} leptospirosis cases (~${weeklyRate}/week). Acute hospital admissions & renal complications typically spike 7–14 days after flood wading.`;
+      takeawayBody = `Model predicts ${cases.toLocaleString()} leptospirosis cases (~${weeklyRate}/week in ${displayCityName}). Acute hospital admissions & renal complications typically spike 7–14 days after flood wading.`;
     } else if (levelId === 'up') {
       takeawayTitle = `Above-Average Exposure Risk · +${pctDiff}% vs. ${mName} Baseline`;
-      takeawayBody = `Projected ${cases.toLocaleString()} cases (~${weeklyRate}/week). Immediate Doxycycline prophylaxis in flooded Manila corridors (España, Tondo) can prevent severe Weil's disease.`;
+      takeawayBody = `Projected ${cases.toLocaleString()} cases (~${weeklyRate}/week in ${displayCityName}). Immediate Doxycycline prophylaxis in flooded corridors can prevent severe Weil's disease.`;
     } else if (levelId === 'low') {
       takeawayTitle = `Low Background Risk · ${cases.toLocaleString()} Projected Cases`;
-      takeawayBody = `Minimal floodwater exposure (~${weeklyRate} cases/week). Standard health center surveillance and prophylaxis stock checks are sufficient.`;
+      takeawayBody = `Minimal floodwater exposure (~${weeklyRate} cases/week in ${displayCityName}). Standard health center surveillance and prophylaxis stock checks are sufficient.`;
     } else {
       takeawayTitle = `Typical Seasonal Exposure · Matches ${mName} Baseline (${Math.round(base).toLocaleString()} cases)`;
-      takeawayBody = `Model estimates ${cases.toLocaleString()} cases (~${weeklyRate}/week) for Manila. Keep post-exposure Doxycycline ready at barangay health stations.`;
+      takeawayBody = `Model estimates ${cases.toLocaleString()} cases (~${weeklyRate}/week) for ${displayCityName}. Keep post-exposure Doxycycline ready at barangay health stations.`;
     }
   }
 
-  const sims = localFallback.similar(key, rain, prev, month, 4);
+  const sims = localFallback.similar(key, rain, prev, month, 4, customHist);
   const meta = buildPresentationMetadata(key, cases, nWeeks, mName, base, ratio, pctDiff, levelId);
 
   const floodZones: FloodZone[] = key === 'dengue'
@@ -633,7 +673,7 @@ export async function fetchPrediction(payload: PredictPayload): Promise<Predicti
 
   return {
     disease: key === 'dengue' ? 'Dengue' : 'Leptospirosis',
-    city: key === 'dengue' ? 'Quezon City' : 'Manila',
+    city: displayCityName,
     month,
     month_name: mName,
     rain,
@@ -658,9 +698,9 @@ export async function fetchPrediction(payload: PredictPayload): Promise<Predicti
     similar_months: sims,
     actions: meta.actions,
     flood_zones: floodZones,
-    response_curve: localFallback.buildResponseCurve(key, rain, prev, month, nWeeks),
-    seasonal_profile: localFallback.buildSeasonalProfile(key),
-    history_points: key === 'dengue' ? localFallback.dengueHistory : localFallback.leptoHistory,
+    response_curve: localFallback.buildResponseCurve(key, rain, prev, month, nWeeks, cases, customHist),
+    seasonal_profile: localFallback.buildSeasonalProfile(key, customHist),
+    history_points: customHist || (key === 'dengue' ? localFallback.dengueHistory : localFallback.leptoHistory),
     is_live_backend: false
   };
 }

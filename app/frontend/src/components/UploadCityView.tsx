@@ -1,8 +1,25 @@
-import React, { useState } from 'react';
-import { UploadCloud, CheckCircle, AlertCircle, Download, Copy, RefreshCw } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import {
+  UploadCloud,
+  CheckCircle,
+  AlertCircle,
+  Download,
+  Copy,
+  RefreshCw,
+  MapPin,
+  ArrowRight,
+  Trash2
+} from 'lucide-react';
+import { METRO_MANILA_CITIES } from './metroManilaData';
+import { HistoricalPoint, UploadedCityData } from '../services/api';
 
 interface UploadCityViewProps {
   disease: 'dengue' | 'lepto';
+  initialCity?: string | null;
+  uploadedCities?: Record<string, UploadedCityData>;
+  onCityUploadSuccess?: (data: UploadedCityData) => void;
+  onRemoveUploadedCity?: (cityKey: string) => void;
+  onViewOnMap?: (cityName: string, disease: 'dengue' | 'lepto') => void;
   theme?: 'light' | 'dark';
 }
 
@@ -34,12 +51,113 @@ function computeSpearmanRho(x: number[], y: number[]): number {
   return denom > 0 ? Number((num / denom).toFixed(3)) : 0;
 }
 
-export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initialDisease, theme = 'dark' }) => {
+const normalizeCityKey = (name?: string | null): string => {
+  if (!name) return '';
+  const n = name.trim().toLowerCase();
+  if (n === 'city of manila' || n === 'manila') return 'manila';
+  if (n.startsWith('city of ')) return n.replace('city of ', '');
+  return n;
+};
+
+function matchNCRCityFromText(rawText: string): string | null {
+  const cleaned = rawText.replace(/\.csv$/i, '').replace(/[_-]+/g, ' ').toLowerCase();
+  for (const c of METRO_MANILA_CITIES) {
+    const cLower = c.name.toLowerCase();
+    const shortLower = cLower.replace(/^city of\s+/i, '');
+    if (cleaned.includes(shortLower) || cleaned.includes(cLower)) {
+      return c.name;
+    }
+  }
+  return null;
+}
+
+function parseHistoryPointsFromRows(
+  diseaseKey: 'dengue' | 'lepto',
+  headers: string[],
+  dataRows: string[][]
+): HistoricalPoint[] {
+  const points: HistoricalPoint[] = [];
+  const rainCol = diseaseKey === 'dengue' ? 'RF_NASA' : 'rain_total_mm';
+  const caseCol = diseaseKey === 'dengue' ? 'DC_QC' : 'lepto';
+  const rainIdx = headers.indexOf(rainCol);
+  const caseIdx = headers.indexOf(caseCol);
+  const weeksIdx = headers.indexOf('n_weeks');
+  const yrIdx = headers.indexOf('YR');
+  const mnIdx = headers.indexOf('MN');
+  const monthStrIdx = headers.indexOf('month');
+
+  dataRows.forEach((row, idx) => {
+    const rain = Number(row[rainIdx]);
+    const cases = Number(row[caseIdx]);
+    if (!Number.isFinite(rain) || !Number.isFinite(cases)) return;
+
+    let year = 2020;
+    let month = (idx % 12) + 1;
+
+    if (diseaseKey === 'dengue' && yrIdx >= 0 && mnIdx >= 0) {
+      const yVal = parseInt(row[yrIdx], 10);
+      const mVal = parseInt(row[mnIdx], 10);
+      if (Number.isFinite(yVal)) year = yVal;
+      if (Number.isFinite(mVal) && mVal >= 1 && mVal <= 12) month = mVal;
+    } else if (monthStrIdx >= 0 && row[monthStrIdx]) {
+      const rawM = row[monthStrIdx].trim();
+      const parts = rawM.split(/[-/]/);
+      if (parts.length >= 2) {
+        const p0 = parseInt(parts[0], 10);
+        const p1 = parseInt(parts[1], 10);
+        if (parts[0].length === 4 && Number.isFinite(p0) && Number.isFinite(p1)) {
+          year = p0;
+          month = Math.max(1, Math.min(12, p1));
+        } else if (Number.isFinite(p0) && Number.isFinite(p1)) {
+          month = Math.max(1, Math.min(12, p0));
+          year = p1;
+        }
+      }
+    }
+
+    const nWeeksVal = weeksIdx >= 0 ? parseInt(row[weeksIdx], 10) : 4;
+    const prevRain = idx > 0 ? Number(dataRows[idx - 1][rainIdx]) : rain;
+
+    points.push({
+      year,
+      month,
+      rain,
+      prev: Number.isFinite(prevRain) ? prevRain : rain,
+      nWeeks: nWeeksVal === 5 ? 5 : 4,
+      cases: Math.max(0, Math.round(cases))
+    });
+  });
+
+  return points;
+}
+
+export const UploadCityView: React.FC<UploadCityViewProps> = ({
+  disease: initialDisease,
+  initialCity,
+  uploadedCities = {},
+  onCityUploadSuccess,
+  onRemoveUploadedCity,
+  onViewOnMap,
+  theme = 'dark'
+}) => {
+  const defaultTargetCity =
+    initialCity && initialCity !== 'Quezon City' && initialCity !== 'City of Manila'
+      ? initialCity
+      : initialCity || 'Makati';
+
   const [disease, setDisease] = useState<'dengue' | 'lepto'>(initialDisease);
+  const [targetCity, setTargetCity] = useState<string>(defaultTargetCity);
   const [file, setFile] = useState<File | null>(null);
   const [validationResult, setValidationResult] = useState<any | null>(null);
+  const [parsedHistory, setParsedHistory] = useState<HistoricalPoint[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (initialCity) {
+      setTargetCity(initialCity);
+    }
+  }, [initialCity]);
 
   const isDark = theme === 'dark';
 
@@ -91,30 +209,32 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
       rainCol: 'rain_total_mm',
       caseCol: 'lepto',
       sample: `month,lepto,rain_total_mm,n_weeks
-2005-01,12,45.2,4
-2005-02,8,25.0,4
-2005-03,6,18.5,4
-2005-04,9,30.2,4
-2005-05,22,125.4,5
-2005-06,45,280.1,4
-2005-07,95,450.0,5
-2005-08,120,510.6,4
-2005-09,85,380.2,4
-2005-10,50,220.0,5
-2005-11,30,135.5,4
-2005-12,18,75.0,5
-2006-01,10,40.0,4
-2006-02,7,22.1,4
-2006-03,5,15.2,4
-2006-04,8,28.0,4
-2006-05,25,130.0,5
-2006-06,55,310.2,4
-2006-07,110,480.5,5
-2006-08,135,540.0,4
-2006-09,90,395.2,4
-2006-10,55,235.1,5
-2006-11,32,140.0,4
-2006-12,20,80.0,5`
+2001-01-01,6,79.67,5
+2001-02-01,6,255.86,4
+2001-03-01,3,124.54,4
+2001-04-01,0,72.12,5
+2001-05-01,9,141.53,4
+2001-06-01,5,244.04,4
+2001-07-01,29,220.13,5
+2001-08-01,27,229.92,4
+2001-09-01,19,51.81,4
+2001-10-01,12,298.15,5
+2001-11-01,7,288.46,4
+2001-12-01,1,392.15,5
+2002-01-01,0,70.47,4
+2002-02-01,1,92.77,4
+2002-03-01,0,73.12,4
+2002-04-01,0,58.37,5
+2002-05-01,4,111.92,4
+2002-06-01,7,173.36,4
+2002-07-01,111,499.4,5
+2002-08-01,66,264.74,4
+2002-09-01,60,262.58,5
+2002-10-01,26,299.9,4
+2002-11-01,19,414.79,4
+2002-12-01,6,219.61,5
+2003-01-01,3,87.03,4
+2003-02-01,1,47.73,4`
     }
   };
 
@@ -129,9 +249,26 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `daloy_${disease}_template.csv`;
+    a.download = `daloy_${targetCity.toLowerCase().replace(/\s+/g, '_')}_${disease}.csv`;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleTargetCityChange = (nextCity: string) => {
+    setTargetCity(nextCity);
+    if (validationResult?.valid && onCityUploadSuccess) {
+      onCityUploadSuccess({
+        cityName: nextCity,
+        disease,
+        fileName: file?.name || `${nextCity.toLowerCase()}.csv`,
+        rowCount: validationResult.row_count,
+        spearmanRho: validationResult.spearman_rho,
+        meanRainfall: validationResult.summary?.mean_rainfall ?? 0,
+        meanCases: validationResult.summary?.mean_cases ?? 0,
+        totalCases: validationResult.summary?.total_cases ?? 0,
+        historyPoints: parsedHistory
+      });
+    }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,34 +281,21 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
   const processFile = async (selectedFile: File) => {
     setIsLoading(true);
 
-    try {
-      const formData = new FormData();
-      formData.append('disease', disease);
-      formData.append('city', selectedFile.name.replace(/\.csv$/i, '') || 'custom_city');
-      formData.append('file', selectedFile);
-
-      const res = await fetch('/api/upload-csv', {
-        method: 'POST',
-        body: formData
-      });
-
-      if (res.ok) {
-        const json = await res.json();
-        setValidationResult(json);
-        setIsLoading(false);
-        return;
-      }
-    } catch {
-      // Offline fallback client validator
+    // Check if filename matches an NCR city (when user didn't lock a specific city)
+    const matchedFromFilename = matchNCRCityFromText(selectedFile.name);
+    const effectiveCity = matchedFromFilename || targetCity;
+    if (matchedFromFilename && matchedFromFilename !== targetCity) {
+      setTargetCity(matchedFromFilename);
     }
 
-    // In-browser fallback CSV validation with authentic Spearman correlation & summary stats
+    // Read CSV text first to auto-detect Dengue vs. Leptospirosis columns & build historyPoints
     const text = await selectedFile.text();
     const lines = text
       .trim()
       .split(/\r?\n/)
       .filter(l => l.trim().length > 0)
       .map(l => l.trim().split(','));
+
     if (lines.length < 2) {
       setValidationResult({
         valid: false,
@@ -183,7 +307,57 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
     }
 
     const headers = lines[0].map(h => h.trim());
-    const expected = schemas[disease].cols;
+    let activeDiseaseKey: 'dengue' | 'lepto' = disease;
+    if (schemas.lepto.cols.every(c => headers.includes(c))) {
+      activeDiseaseKey = 'lepto';
+      if (disease !== 'lepto') setDisease('lepto');
+    } else if (schemas.dengue.cols.every(c => headers.includes(c))) {
+      activeDiseaseKey = 'dengue';
+      if (disease !== 'dengue') setDisease('dengue');
+    }
+
+    const dataRows = lines.slice(1);
+    const extractedHistory = parseHistoryPointsFromRows(activeDiseaseKey, headers, dataRows);
+    setParsedHistory(extractedHistory);
+
+    try {
+      const formData = new FormData();
+      formData.append('disease', activeDiseaseKey);
+      formData.append('city', effectiveCity);
+      formData.append('file', selectedFile);
+
+      const res = await fetch('/api/upload-csv', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        const finalDisease: 'dengue' | 'lepto' = json.disease === 'lepto' ? 'lepto' : json.disease === 'dengue' ? 'dengue' : activeDiseaseKey;
+        if (finalDisease !== disease) setDisease(finalDisease);
+        setValidationResult(json);
+        if (json.valid && onCityUploadSuccess) {
+          onCityUploadSuccess({
+            cityName: effectiveCity,
+            disease: finalDisease,
+            fileName: selectedFile.name,
+            rowCount: json.row_count,
+            spearmanRho: json.spearman_rho,
+            meanRainfall: json.summary?.mean_rainfall ?? 0,
+            meanCases: json.summary?.mean_cases ?? 0,
+            totalCases: json.summary?.total_cases ?? 0,
+            historyPoints: extractedHistory
+          });
+        }
+        setIsLoading(false);
+        return;
+      }
+    } catch {
+      // Offline fallback client validator
+    }
+
+    // In-browser fallback CSV validation with authentic Spearman correlation & summary stats
+    const expected = schemas[activeDiseaseKey].cols;
     const missing = expected.filter(c => !headers.includes(c));
 
     if (missing.length > 0) {
@@ -197,15 +371,14 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
       return;
     }
 
-    const dataRows = lines.slice(1);
     const rowCount = dataRows.length;
     const valid = rowCount >= 24;
     const errors = valid
       ? []
       : [`Need at least 24 monthly records for Leave-One-Year-Out cross-validation (found ${rowCount}).`];
 
-    const rainIdx = headers.indexOf(schemas[disease].rainCol);
-    const caseIdx = headers.indexOf(schemas[disease].caseCol);
+    const rainIdx = headers.indexOf(schemas[activeDiseaseKey].rainCol);
+    const caseIdx = headers.indexOf(schemas[activeDiseaseKey].caseCol);
 
     const rains = dataRows.map(r => Number(r[rainIdx]) || 0);
     const cases = dataRows.map(r => Number(r[caseIdx]) || 0);
@@ -215,8 +388,10 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
     const meanCases = cases.length > 0 ? Number((totalCases / cases.length).toFixed(1)) : 0;
     const spearmanRho = computeSpearmanRho(rains, cases);
 
-    setValidationResult({
+    const resultObj = {
       valid,
+      disease: activeDiseaseKey,
+      city: effectiveCity,
       row_count: rowCount,
       errors,
       spearman_rho: spearmanRho,
@@ -232,7 +407,24 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
         });
         return obj;
       })
-    });
+    };
+
+    setValidationResult(resultObj);
+
+    if (valid && onCityUploadSuccess) {
+      onCityUploadSuccess({
+        cityName: effectiveCity,
+        disease: activeDiseaseKey,
+        fileName: selectedFile.name,
+        rowCount,
+        spearmanRho,
+        meanRainfall: meanRain,
+        meanCases,
+        totalCases,
+        historyPoints: extractedHistory
+      });
+    }
+
     setIsLoading(false);
   };
 
@@ -286,8 +478,103 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: Schema and Guidelines */}
+        {/* Left Column: Target City Selector, Schema and Guidelines */}
         <div className="lg:col-span-5 space-y-6">
+          {/* Target Metro Manila City Selector */}
+          <div className={`p-6 rounded-3xl border space-y-3 ${cardCls}`}>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-teal-500" />
+                <h3 className={`text-sm font-bold uppercase tracking-wider ${headingCls}`}>
+                  Target Metro Manila LGU
+                </h3>
+              </div>
+              <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                disease === 'dengue'
+                  ? 'bg-rose-500/15 text-rose-500 border-rose-500/30'
+                  : 'bg-teal-500/15 text-teal-400 border-teal-500/30'
+              }`}>
+                {disease === 'dengue' ? 'Dengue Layer' : 'Leptospirosis Layer'}
+              </span>
+            </div>
+
+            <p className={`text-xs leading-relaxed ${mutedCls}`}>
+              Select the Metro Manila city this CSV dataset belongs to. Once validated, this city will be highlighted on the 3D map under <strong>{disease === 'dengue' ? 'Dengue' : 'Leptospirosis'}</strong> alongside baseline cities.
+            </p>
+
+            <select
+              value={targetCity}
+              onChange={e => handleTargetCityChange(e.target.value)}
+              className={`w-full px-3.5 py-2.5 rounded-xl text-sm font-bold border focus:outline-none transition ${
+                isDark
+                  ? 'bg-slate-800 border-slate-700 text-white focus:border-teal-500'
+                  : 'bg-[#F4EFE6] border-[#E7E1D6] text-stone-900 focus:border-stone-500'
+              }`}
+            >
+              {METRO_MANILA_CITIES.map(c => (
+                <option key={c.name} value={c.name}>
+                  {c.name} ({c.district})
+                </option>
+              ))}
+            </select>
+
+            {/* Active Uploaded Cities List */}
+            {Object.keys(uploadedCities).length > 0 && (
+              <div className={`pt-3 mt-3 border-t ${borderCls} space-y-2`}>
+                <span className={`text-[10px] font-extrabold uppercase tracking-wider block ${mutedCls}`}>
+                  Active Uploaded Cities on 3D Map ({Object.keys(uploadedCities).length})
+                </span>
+                <div className="space-y-1.5">
+                  {Object.entries(uploadedCities).map(([key, item]) => (
+                    <div
+                      key={key}
+                      className={`flex items-center justify-between gap-2 px-3 py-2 rounded-xl border text-xs ${insetCls}`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span
+                          className={`w-2.5 h-2.5 rounded-sm shrink-0 ${
+                            item.disease === 'dengue' ? 'bg-[#E11D48]' : 'bg-[#0D9488]'
+                          }`}
+                        />
+                        <div className="min-w-0">
+                          <div className={`font-bold truncate ${headingCls}`}>{item.cityName}</div>
+                          <div className={`text-[10px] font-mono ${mutedCls}`}>
+                            {item.disease === 'dengue' ? 'Dengue' : 'Leptospirosis'} · {item.rowCount} mos · ρ={item.spearmanRho >= 0 ? `+${item.spearmanRho}` : item.spearmanRho}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {onViewOnMap && (
+                          <button
+                            type="button"
+                            onClick={() => onViewOnMap(item.cityName, item.disease)}
+                            className={`px-2 py-1 rounded-lg text-[10px] font-bold transition ${
+                              item.disease === 'dengue'
+                                ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30'
+                                : 'bg-teal-500/20 text-teal-300 hover:bg-teal-500/30'
+                            }`}
+                          >
+                            View Map
+                          </button>
+                        )}
+                        {onRemoveUploadedCity && (
+                          <button
+                            type="button"
+                            onClick={() => onRemoveUploadedCity(normalizeCityKey(item.cityName))}
+                            title="Remove uploaded city data"
+                            className="p-1 rounded-lg text-rose-400 hover:bg-rose-500/15 transition"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className={`p-6 rounded-3xl border ${cardCls}`}>
             <h3 className={`text-sm font-bold uppercase tracking-wider mb-3 ${mutedCls}`}>
               Required CSV Schema ({disease.toUpperCase()})
@@ -409,6 +696,36 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
 
               {validationResult.valid && (
                 <>
+                  <div className={`p-4 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${
+                    disease === 'dengue'
+                      ? isDark ? 'bg-rose-950/40 border-rose-500/40 text-rose-100' : 'bg-rose-50 border-rose-200 text-rose-900'
+                      : isDark ? 'bg-teal-950/40 border-teal-500/40 text-teal-100' : 'bg-teal-50 border-teal-200 text-teal-900'
+                  }`}>
+                    <div className="space-y-0.5">
+                      <div className="text-xs font-extrabold flex items-center gap-1.5">
+                        <span className={`w-2.5 h-2.5 rounded-sm ${disease === 'dengue' ? 'bg-[#E11D48]' : 'bg-[#0D9488]'}`} />
+                        <span>{targetCity} added to {disease === 'dengue' ? 'Dengue' : 'Leptospirosis'} 3D Map Layer</span>
+                      </div>
+                      <p className="text-[11px] opacity-85">
+                        {targetCity} will now highlight with full 3D elevation &amp; barangay grids alongside {disease === 'dengue' ? 'Quezon City' : 'City of Manila'}.
+                      </p>
+                    </div>
+                    {onViewOnMap && (
+                      <button
+                        type="button"
+                        onClick={() => onViewOnMap(targetCity, disease)}
+                        className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-extrabold shrink-0 transition shadow-md ${
+                          disease === 'dengue'
+                            ? 'bg-[#E11D48] hover:bg-rose-500 text-white'
+                            : 'bg-[#0D9488] hover:bg-teal-500 text-white'
+                        }`}
+                      >
+                        <span>Visualize {targetCity} on Map</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                     <div className={`p-4 rounded-2xl border ${insetCls}`}>
                       <span className={`text-xs ${mutedCls}`}>Spearman Rank ρ</span>

@@ -3,8 +3,8 @@ import { Philippines3DMap } from './components/Philippines3DMap';
 import { CaseEstimateView } from './components/CaseEstimateView';
 import { UploadCityView } from './components/UploadCityView';
 import { MethodView } from './components/MethodView';
-import { fetchPrediction, PredictionResult } from './services/api';
-import { NCRCityPolygon, METRO_MANILA_CITIES } from './components/metroManilaData';
+import { fetchPrediction, PredictionResult, UploadedCityData } from './services/api';
+import { NCRCityPolygon, METRO_MANILA_CITIES, normalizeCityName } from './components/metroManilaData';
 import { ActionLayerFilter } from './components/actionMapData';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { DaloyAnimatedLogo } from './components/DaloyAnimatedLogo';
@@ -42,6 +42,7 @@ export const App: React.FC = () => {
   const [focusedTargetCoords, setFocusedTargetCoords] = useState<[number, number] | null>(null);
   const [returnView, setReturnView] = useState<'onboarding' | 'predict'>('onboarding');
   const [showEntranceIntro, setShowEntranceIntro] = useState<boolean>(true);
+  const [uploadedCities, setUploadedCities] = useState<Record<string, UploadedCityData>>({});
 
   // Initialize dark mode on mount for crisp 3D contrast
   useEffect(() => {
@@ -62,12 +63,16 @@ export const App: React.FC = () => {
   useEffect(() => {
     let isCancelled = false;
     const timer = setTimeout(() => {
+      const normalizedInspected = inspectedCity ? normalizeCityName(inspectedCity.name) : '';
+      const customCity = inspectedCity && uploadedCities[normalizedInspected] ? uploadedCities[normalizedInspected] : null;
+
       fetchPrediction({
         disease: activeDisease,
         month,
         rain: rainfall,
         prev_rain: prevRain,
-        n_weeks: nWeeks
+        n_weeks: nWeeks,
+        customCity: customCity || undefined
       }).then(res => {
         if (!isCancelled) {
           setPredictionResult(res);
@@ -79,7 +84,7 @@ export const App: React.FC = () => {
       isCancelled = true;
       clearTimeout(timer);
     };
-  }, [activeDisease, month, rainfall, prevRain, nWeeks]);
+  }, [activeDisease, month, rainfall, prevRain, nWeeks, inspectedCity, uploadedCities]);
 
   const toggleTheme = () => {
     document.documentElement.classList.add('theme-transitioning');
@@ -108,14 +113,22 @@ export const App: React.FC = () => {
             activeDisease={activeDisease}
             onSelectCity={d => {
               setActiveDisease(d);
-              const targetCity = METRO_MANILA_CITIES.find(c => c.focusId === d) || null;
-              setInspectedCity(targetCity);
+              setInspectedCity(prev => {
+                if (prev) {
+                  const norm = normalizeCityName(prev.name);
+                  if (uploadedCities[norm]?.disease === d || prev.focusId === d) {
+                    return prev;
+                  }
+                }
+                return METRO_MANILA_CITIES.find(c => c.focusId === d) || null;
+              });
               setActiveView('predict');
               setFocusedActionCode(null);
               setFocusedTargetCoords(null);
             }}
             onInspectCity={city => setInspectedCity(city)}
             inspectedCity={inspectedCity}
+            uploadedCities={uploadedCities}
             rainfallIntensity={rainfall}
             predictedCases={predictionResult?.predicted_cases ?? 270}
             theme={theme}
@@ -175,25 +188,74 @@ export const App: React.FC = () => {
           </div>
 
           {/* City & Tactical Action Layer Color Key */}
-          <div className={`hidden 2xl:flex items-center gap-3 pl-3 ml-1 border-l text-[10px] font-semibold ${
-            isDark ? 'border-slate-800 text-slate-400' : 'border-[#E7E1D6] text-stone-600'
-          }`}>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-[#E11D48]" /> QC (Dengue)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-[#0D9488]" /> Manila (Lepto)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-sm bg-orange-500" /> Vulnerable Grids (5)
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-sky-400" /> Hospitals
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" /> Health Ctrs
-            </span>
-          </div>
+          {(() => {
+            const dengueUploaded = Object.values(uploadedCities).filter(c => c.disease === 'dengue' && normalizeCityName(c.cityName) !== 'quezon city');
+            const leptoUploaded = Object.values(uploadedCities).filter(c => c.disease === 'lepto' && normalizeCityName(c.cityName) !== 'manila');
+            const dengueTotal = 1 + dengueUploaded.length;
+            const leptoTotal = 1 + leptoUploaded.length;
+
+            return (
+              <div className={`hidden 2xl:flex items-center gap-3 pl-3 ml-1 border-l text-[10px] font-semibold ${
+                isDark ? 'border-slate-800 text-slate-400' : 'border-[#E7E1D6] text-stone-600'
+              }`}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveDisease('dengue');
+                    const targetCity = METRO_MANILA_CITIES.find(c => c.focusId === 'dengue') || null;
+                    setInspectedCity(targetCity);
+                  }}
+                  title="Switch to Dengue mode"
+                  className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition ${
+                    activeDisease === 'dengue'
+                      ? 'text-rose-400 font-bold bg-rose-500/15'
+                      : 'hover:text-rose-400'
+                  }`}
+                >
+                  <span className="w-2.5 h-2.5 rounded-sm bg-[#E11D48] shrink-0" />
+                  <span>Dengue</span>
+                  {dengueTotal > 1 && (
+                    <span className="text-[9px] px-1 rounded-full bg-rose-500/20 text-rose-300 font-extrabold border border-rose-500/30">
+                      {dengueTotal}
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveDisease('lepto');
+                    const targetCity = METRO_MANILA_CITIES.find(c => c.focusId === 'lepto') || null;
+                    setInspectedCity(targetCity);
+                  }}
+                  title="Switch to Leptospirosis mode"
+                  className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition ${
+                    activeDisease === 'lepto'
+                      ? 'text-teal-400 font-bold bg-teal-500/15'
+                      : 'hover:text-teal-400'
+                  }`}
+                >
+                  <span className="w-2.5 h-2.5 rounded-sm bg-[#0D9488] shrink-0" />
+                  <span>Leptospirosis</span>
+                  {leptoTotal > 1 && (
+                    <span className="text-[9px] px-1 rounded-full bg-teal-500/20 text-teal-300 font-extrabold border border-teal-500/30">
+                      {leptoTotal}
+                    </span>
+                  )}
+                </button>
+
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-sm bg-orange-500" /> Vulnerable Grids (5)
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-sky-400" /> Hospitals
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" /> Health Ctrs
+                </span>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Center Navigation Tabs Pill — Separate Screens for Model Graph vs. Action Plan */}
@@ -362,6 +424,7 @@ export const App: React.FC = () => {
       {/* FLOATING HUD SIDE CARDS FOR CASE ESTIMATE VIEW */}
       {activeView === 'predict' && hudVisible && (
         <CaseEstimateView
+          uploadedCities={uploadedCities}
           activeDisease={activeDisease}
           onDiseaseChange={d => {
             setActiveDisease(d);
@@ -380,6 +443,7 @@ export const App: React.FC = () => {
           onNWeeksChange={setNWeeks}
           result={predictionResult}
           inspectedCity={inspectedCity}
+          onInspectCity={city => setInspectedCity(city)}
           onClearCity={() => {
             setInspectedCity(null);
             setFocusedTargetCoords(null);
@@ -440,7 +504,35 @@ export const App: React.FC = () => {
                 ? 'bg-slate-900/95 border-slate-800 shadow-black/60'
                 : 'bg-[#FFFDF9] border-[#E7E1D6] shadow-stone-300/40'
             }`}>
-              <UploadCityView disease={activeDisease} theme={theme} />
+              <UploadCityView
+                disease={activeDisease}
+                theme={theme}
+                initialCity={inspectedCity?.name}
+                uploadedCities={uploadedCities}
+                onCityUploadSuccess={data => {
+                  const key = normalizeCityName(data.cityName);
+                  setUploadedCities(prev => ({ ...prev, [key]: data }));
+                  setActiveDisease(data.disease);
+                  const targetCity = METRO_MANILA_CITIES.find(c => normalizeCityName(c.name) === key) || null;
+                  if (targetCity) {
+                    setInspectedCity(targetCity);
+                  }
+                }}
+                onRemoveUploadedCity={key => {
+                  setUploadedCities(prev => {
+                    const next = { ...prev };
+                    delete next[key];
+                    return next;
+                  });
+                }}
+                onViewOnMap={(cityName, disease) => {
+                  setActiveDisease(disease);
+                  const targetCity = METRO_MANILA_CITIES.find(c => normalizeCityName(c.name) === normalizeCityName(cityName)) || null;
+                  setInspectedCity(targetCity);
+                  setActiveView('predict');
+                  setShowAnalyticsModal(false);
+                }}
+              />
             </div>
           </div>
         </div>

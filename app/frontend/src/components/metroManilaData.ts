@@ -23,6 +23,14 @@ export interface RiverPath {
 
 export const NCR_CENTER = { lon: 121.03, lat: 14.605, scale: 62.0 };
 
+export function normalizeCityName(name?: string | null): string {
+  if (!name) return '';
+  const n = name.trim().toLowerCase();
+  if (n === 'city of manila' || n === 'manila') return 'manila';
+  if (n.startsWith('city of ')) return n.replace('city of ', '');
+  return n;
+}
+
 export function ncrGeoTo3D(lon: number, lat: number): [number, number] {
   const x = (lon - NCR_CENTER.lon) * NCR_CENTER.scale;
   const z = -(lat - NCR_CENTER.lat) * NCR_CENTER.scale;

@@ -3,9 +3,10 @@ import {
   PredictionResult,
   getHistoricalPoints,
   MONTH_NAMES,
-  MON3_NAMES
+  MON3_NAMES,
+  UploadedCityData
 } from '../services/api';
-import { NCRCityPolygon } from './metroManilaData';
+import { NCRCityPolygon, METRO_MANILA_CITIES, normalizeCityName } from './metroManilaData';
 import {
   ActionLayerFilter,
   getFacilitiesForCity,
@@ -67,6 +68,8 @@ interface CaseEstimateViewProps {
     code: string;
     coords?: [number, number];
   }) => void;
+  uploadedCities?: Record<string, UploadedCityData>;
+  onInspectCity?: (city: NCRCityPolygon) => void;
 }
 
 export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
@@ -89,7 +92,9 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
   analyticsSection = 'charts',
   onAnalyticsSectionChange,
   theme = 'dark',
-  onFocusMapTarget
+  onFocusMapTarget,
+  uploadedCities = {},
+  onInspectCity
 }) => {
   const [showFormula, setShowFormula] = useState<boolean>(false);
   const [checkedActions, setCheckedActions] = useState<Record<string, boolean>>({});
@@ -238,7 +243,7 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span className={`text-xs font-extrabold truncate ${headingCls}`}>
-                    {activeDisease === 'dengue' ? 'Dengue · QC' : 'Lepto · Manila'}
+                    {activeDisease === 'dengue' ? 'Dengue' : 'Leptospirosis'} · {inspectedCity ? inspectedCity.name : (activeDisease === 'dengue' ? 'QC' : 'Manila')}
                   </span>
                   <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${insetCls}`}>
                     {MON3_NAMES[month - 1]}
@@ -284,43 +289,111 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
               </div>
 
               {/* Segmented Disease Switcher */}
-              <div className={`grid grid-cols-2 gap-1.5 p-1 rounded-2xl border ${insetCls}`}>
-                <button
-                  type="button"
-                  onClick={() => onDiseaseChange('dengue')}
-                  className={`flex flex-col items-start px-3 py-2 rounded-xl text-left transition ${
-                    activeDisease === 'dengue'
-                      ? 'bg-[#E11D48] text-white shadow-md'
-                      : isDark
-                      ? 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-                      : 'text-stone-700 hover:text-stone-900 hover:bg-[#EAE3D6]'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 text-xs font-extrabold">
-                    <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                    Dengue
-                  </div>
-                  <span className="text-[10px] opacity-85">Quezon City (2010–2025)</span>
-                </button>
+              {(() => {
+                const dengueUploadedList = Object.values(uploadedCities).filter(
+                  c => c.disease === 'dengue' && normalizeCityName(c.cityName) !== 'quezon city'
+                );
+                const leptoUploadedList = Object.values(uploadedCities).filter(
+                  c => c.disease === 'lepto' && normalizeCityName(c.cityName) !== 'manila'
+                );
 
-                <button
-                  type="button"
-                  onClick={() => onDiseaseChange('lepto')}
-                  className={`flex flex-col items-start px-3 py-2 rounded-xl text-left transition ${
-                    activeDisease === 'lepto'
-                      ? 'bg-[#0D9488] text-white shadow-md'
-                      : isDark
-                      ? 'text-slate-300 hover:text-white hover:bg-slate-700/60'
-                      : 'text-stone-700 hover:text-stone-900 hover:bg-[#EAE3D6]'
-                  }`}
-                >
-                  <div className="flex items-center gap-1.5 text-xs font-extrabold">
-                    <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
-                    Leptospirosis
+                return (
+                  <div className="space-y-2">
+                    <div className={`grid grid-cols-2 gap-1.5 p-1 rounded-2xl border ${insetCls}`}>
+                      <button
+                        type="button"
+                        onClick={() => onDiseaseChange('dengue')}
+                        className={`flex flex-col items-start px-3 py-2 rounded-xl text-left transition ${
+                          activeDisease === 'dengue'
+                            ? 'bg-[#E11D48] text-white shadow-md'
+                            : isDark
+                            ? 'text-slate-300 hover:text-white hover:bg-slate-700/60'
+                            : 'text-stone-700 hover:text-stone-900 hover:bg-[#EAE3D6]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 text-xs font-extrabold">
+                          <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
+                          Dengue
+                        </div>
+                        <span className="text-[10px] opacity-85">
+                          {dengueUploadedList.length > 0
+                            ? `QC + ${dengueUploadedList.length} more (${1 + dengueUploadedList.length} LGUs)`
+                            : 'Quezon City (2010–2025)'}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => onDiseaseChange('lepto')}
+                        className={`flex flex-col items-start px-3 py-2 rounded-xl text-left transition ${
+                          activeDisease === 'lepto'
+                            ? 'bg-[#0D9488] text-white shadow-md'
+                            : isDark
+                            ? 'text-slate-300 hover:text-white hover:bg-slate-700/60'
+                            : 'text-stone-700 hover:text-stone-900 hover:bg-[#EAE3D6]'
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 text-xs font-extrabold">
+                          <span className="w-2.5 h-2.5 rounded-full bg-white animate-pulse" />
+                          Leptospirosis
+                        </div>
+                        <span className="text-[10px] opacity-85">
+                          {leptoUploadedList.length > 0
+                            ? `Manila + ${leptoUploadedList.length} more (${1 + leptoUploadedList.length} LGUs)`
+                            : 'Manila (2001–2012)'}
+                        </span>
+                      </button>
+                    </div>
+
+                    {/* Active LGU quick chips when multiple cities exist for active disease */}
+                    {(() => {
+                      const activeUploaded = activeDisease === 'dengue' ? dengueUploadedList : leptoUploadedList;
+                      if (activeUploaded.length === 0) return null;
+                      const defaultCityName = activeDisease === 'dengue' ? 'Quezon City' : 'City of Manila';
+                      const allActiveNames = [defaultCityName, ...activeUploaded.map(u => u.cityName)];
+
+                      return (
+                        <div className={`p-2 rounded-xl border space-y-1.5 ${insetCls}`}>
+                          <div className="flex items-center justify-between text-[10px] font-bold">
+                            <span className={isDark ? 'text-slate-300' : 'text-stone-700'}>
+                              {activeDisease === 'dengue' ? 'Dengue' : 'Lepto'} Cities ({allActiveNames.length})
+                            </span>
+                            <span className={`text-[9px] ${mutedCls}`}>Click to inspect</span>
+                          </div>
+                          <div className="flex flex-wrap gap-1">
+                            {allActiveNames.map(cityName => {
+                              const isCurrent = inspectedCity && normalizeCityName(inspectedCity.name) === normalizeCityName(cityName);
+                              return (
+                                <button
+                                  key={cityName}
+                                  type="button"
+                                  onClick={() => {
+                                    const target = METRO_MANILA_CITIES.find(c => normalizeCityName(c.name) === normalizeCityName(cityName));
+                                    if (target && onInspectCity) {
+                                      onInspectCity(target);
+                                    }
+                                  }}
+                                  className={`text-[10px] font-bold px-2 py-0.5 rounded-md transition ${
+                                    isCurrent
+                                      ? activeDisease === 'dengue'
+                                        ? 'bg-[#E11D48] text-white shadow-sm'
+                                        : 'bg-[#0D9488] text-white shadow-sm'
+                                      : isDark
+                                      ? 'bg-slate-800 text-slate-300 hover:text-white'
+                                      : 'bg-[#F4EFE6] text-stone-700 hover:text-stone-900'
+                                  }`}
+                                >
+                                  {cityName}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
-                  <span className="text-[10px] opacity-85">Manila (2001–2012)</span>
-                </button>
-              </div>
+                );
+              })()}
 
               {/* Calendar Month Selector */}
               <div>
@@ -597,24 +670,38 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
                 <div className="mt-2.5 pt-2.5 border-t border-slate-800/40 dark:border-slate-800">
                   {inspectedCity ? (
                     <div className="space-y-2 text-xs">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className={`text-[11px] font-mono ${mutedCls}`}>
-                          {inspectedCity.district} · {inspectedCity.areaKm2} km²
-                        </span>
-                        <span
-                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                            inspectedCity.focusId === 'dengue'
-                              ? 'bg-rose-100 text-rose-900 border border-rose-200 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/30'
-                              : inspectedCity.focusId === 'lepto'
-                              ? 'bg-teal-100 text-teal-900 border border-teal-200 dark:bg-teal-500/20 dark:text-teal-300 dark:border-teal-500/30'
-                              : isDark
-                              ? 'bg-slate-800 text-slate-300 border border-slate-700'
-                              : 'bg-[#F4EFE6] text-stone-700 border border-[#E7E1D6]'
-                          }`}
-                        >
-                          {inspectedCity.isFocus ? 'In Model Scope' : 'Out of Scope'}
-                        </span>
-                      </div>
+                      {(() => {
+                        const inspectedNorm = normalizeCityName(inspectedCity.name);
+                        const uploadedInfo = uploadedCities[inspectedNorm];
+                        return (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={`text-[11px] font-mono ${mutedCls}`}>
+                              {inspectedCity.district} · {inspectedCity.areaKm2} km²
+                            </span>
+                            <span
+                              className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                uploadedInfo
+                                  ? uploadedInfo.disease === 'dengue'
+                                    ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                                    : 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
+                                  : inspectedCity.focusId === 'dengue'
+                                  ? 'bg-rose-100 text-rose-900 border border-rose-200 dark:bg-rose-500/20 dark:text-rose-300 dark:border-rose-500/30'
+                                  : inspectedCity.focusId === 'lepto'
+                                  ? 'bg-teal-100 text-teal-900 border border-teal-200 dark:bg-teal-500/20 dark:text-teal-300 dark:border-teal-500/30'
+                                  : isDark
+                                  ? 'bg-slate-800 text-slate-300 border border-slate-700'
+                                  : 'bg-[#F4EFE6] text-stone-700 border border-[#E7E1D6]'
+                              }`}
+                            >
+                              {uploadedInfo
+                                ? `Uploaded CSV · ${uploadedInfo.disease === 'dengue' ? 'Dengue' : 'Leptospirosis'}`
+                                : inspectedCity.isFocus
+                                ? 'In Model Scope'
+                                : 'Out of Scope'}
+                            </span>
+                          </div>
+                        );
+                      })()}
 
                       <div className={`p-2.5 rounded-xl border text-[11px] space-y-1 ${insetCls}`}>
                         <div>
@@ -679,20 +766,51 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
                         );
                       })()}
 
-                      {!inspectedCity.isFocus && (
-                        <button
-                          type="button"
-                          onClick={onOpenUploadForCity}
-                          className={`w-full py-2 px-3 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition shadow-sm ${
-                            isDark
-                              ? 'bg-slate-800 hover:bg-slate-700 text-white'
-                              : 'bg-stone-900 hover:bg-stone-800 text-white'
-                          }`}
-                        >
-                          <UploadCloud className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Upload CSV for {inspectedCity.name}</span>
-                        </button>
-                      )}
+                      {(() => {
+                        const inspectedNorm = normalizeCityName(inspectedCity.name);
+                        const uploadedInfo = uploadedCities[inspectedNorm];
+                        return (
+                          <>
+                            {uploadedInfo && (
+                              <div className={`p-2.5 rounded-xl border text-[11px] space-y-1 ${
+                                uploadedInfo.disease === 'dengue'
+                                  ? 'bg-rose-500/10 border-rose-500/30 text-rose-300'
+                                  : 'bg-teal-500/10 border-teal-500/30 text-teal-300'
+                              }`}>
+                                <div className="flex items-center justify-between">
+                                  <span className="font-bold flex items-center gap-1.5">
+                                    <UploadCloud className="w-3.5 h-3.5" />
+                                    <span>Custom Surveillance Data</span>
+                                  </span>
+                                  <span className="font-mono text-[10px] opacity-80">
+                                    {uploadedInfo.historyPoints.length} records
+                                  </span>
+                                </div>
+                                <div className="text-[10px] opacity-80 truncate">
+                                  File: {uploadedInfo.fileName}
+                                </div>
+                              </div>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={onOpenUploadForCity}
+                              className={`w-full py-2 px-3 rounded-xl text-[11px] font-bold flex items-center justify-center gap-1.5 transition shadow-sm ${
+                                isDark
+                                  ? 'bg-slate-800 hover:bg-slate-700 text-white'
+                                  : 'bg-stone-900 hover:bg-stone-800 text-white'
+                              }`}
+                            >
+                              <UploadCloud className="w-3.5 h-3.5 text-amber-400" />
+                              <span>
+                                {uploadedInfo
+                                  ? `Update CSV for ${inspectedCity.name}`
+                                  : `Upload CSV for ${inspectedCity.name}`}
+                              </span>
+                            </button>
+                          </>
+                        );
+                      })()}
                     </div>
                   ) : (
                     <p className={`text-[11px] leading-relaxed ${mutedCls}`}>

@@ -15,6 +15,7 @@ import {
   NCR_BARANGAYS,
   NCRBarangayPolygon
 } from './ncrBarangayGeoData';
+import { UploadedCityData } from '../services/api';
 import {
   CloudRain,
   Compass,
@@ -30,9 +31,10 @@ import {
 
 export interface Philippines3DMapProps {
   activeDisease: 'dengue' | 'lepto';
-  onSelectCity: (disease: 'dengue' | 'lepto') => void;
+  onSelectCity: (disease: 'dengue' | 'lepto', city?: NCRCityPolygon | null) => void;
   onInspectCity?: (city: NCRCityPolygon | null) => void;
   inspectedCity?: NCRCityPolygon | null;
+  uploadedCities?: Record<string, UploadedCityData>;
   rainfallIntensity?: number; // 0 to 1200 mm
   predictedCases?: number;
   theme?: 'light' | 'dark';
@@ -75,6 +77,7 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
   onSelectCity,
   onInspectCity,
   inspectedCity,
+  uploadedCities = {},
   rainfallIntensity = 430,
   theme = 'dark',
   paused = false,
@@ -140,6 +143,23 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
 
   const inspectedCityRef = useRef<NCRCityPolygon | null>(inspectedCity);
   inspectedCityRef.current = inspectedCity;
+
+  const uploadedCitiesRef = useRef<Record<string, UploadedCityData>>(uploadedCities);
+  uploadedCitiesRef.current = uploadedCities;
+
+  const getCityDisease = useCallback(
+    (cityName?: string | null, defaultFocusId?: 'dengue' | 'lepto' | null): 'dengue' | 'lepto' | null => {
+      const norm = normalizeCityName(cityName);
+      if (norm && uploadedCitiesRef.current[norm]) {
+        return uploadedCitiesRef.current[norm].disease;
+      }
+      if (defaultFocusId) return defaultFocusId;
+      if (norm === 'quezon city') return 'dengue';
+      if (norm === 'manila') return 'lepto';
+      return null;
+    },
+    []
+  );
 
   const rainfallRef = useRef<number>(rainfallIntensity);
   rainfallRef.current = rainfallIntensity;
@@ -216,6 +236,33 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
     }
   }, []);
 
+  // Frame all cities belonging to a disease (e.g. both Manila and Makati when 2 cities have Lepto)
+  const frameDiseaseCities = useCallback(
+    (targetDisease: 'dengue' | 'lepto') => {
+      const matchingCities = METRO_MANILA_CITIES.filter(
+        c => getCityDisease(c.name, c.focusId) === targetDisease
+      );
+      if (matchingCities.length <= 1) {
+        setCameraView(targetDisease === 'dengue' ? 'qc' : 'manila');
+        return;
+      }
+      let sumLon = 0;
+      let sumLat = 0;
+      matchingCities.forEach(c => {
+        sumLon += c.centroid[0];
+        sumLat += c.centroid[1];
+      });
+      const avgLon = sumLon / matchingCities.length;
+      const avgLat = sumLat / matchingCities.length;
+      const [cx, cz] = ncrGeoTo3D(avgLon, avgLat);
+      cameraTargetRef.current.lookAt.set(cx, 0.2, cz);
+      orbitRef.current.theta = -0.04;
+      orbitRef.current.phi = 0.68;
+      orbitRef.current.radius = 12.2;
+    },
+    [getCityDisease, setCameraView]
+  );
+
   // Fly camera when inspectedCity, focusedTargetCoords, or focusedActionCode changes
   useEffect(() => {
     if (focusedTargetCoords) {
@@ -229,7 +276,14 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
       if (inspectedCity.name === 'Quezon City') {
         setCameraView('qc');
       } else if (inspectedCity.name === 'City of Manila' || inspectedCity.name === 'Manila') {
-        setCameraView('manila');
+        const matchingLeptoCities = METRO_MANILA_CITIES.filter(
+          c => getCityDisease(c.name, c.focusId) === 'lepto'
+        );
+        if (matchingLeptoCities.length > 1) {
+          frameDiseaseCities('lepto');
+        } else {
+          setCameraView('manila');
+        }
       } else if (inspectedCity.centroid) {
         const [cx, cz] = ncrGeoTo3D(inspectedCity.centroid[0], inspectedCity.centroid[1]);
         cameraTargetRef.current.lookAt.set(cx, 0.25, cz);
@@ -237,7 +291,7 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
         orbitRef.current.phi = 0.65;
       }
     }
-  }, [inspectedCity, focusedTargetCoords, focusedActionCode, activeDisease, setCameraView]);
+  }, [inspectedCity, focusedTargetCoords, focusedActionCode, activeDisease, setCameraView, getCityDisease, frameDiseaseCities]);
 
   // Synchronize 17 Cities + Official PSA Barangay Polygons (Vulnerable & Non-Vulnerable) + Health Facility Markers
   // Reads from refs so that onMouseMove and all event listeners always access 100% fresh state!
@@ -259,8 +313,9 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
       const lineMat = border.material as THREE.LineBasicMaterial;
       const isHovered = hoveredKeyRef.current === `city:${city.name}`;
       const isInspected = Boolean(curInspectedCity && normalizeCityName(curInspectedCity.name) === normalizeCityName(city.name));
+      const cityDisease = getCityDisease(city.name, city.focusId);
 
-      if (city.focusId === 'dengue') {
+      if (cityDisease === 'dengue') {
         const isActive = curActiveDisease === 'dengue';
         mat.color.setHex(isActive ? (isDark ? 0x881337 : 0xBE123C) : (isDark ? 0x4C0519 : 0x9F1239));
         mat.emissive.setHex(0xE11D48);
@@ -273,7 +328,7 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
         border.position.y = topY + 0.012;
         lineMat.color.setHex(isHovered ? 0xFFFFFF : (isDark ? 0xFDA4AF : 0xFFE4E6));
         lineMat.opacity = isHovered ? 1.0 : 0.85;
-      } else if (city.focusId === 'lepto') {
+      } else if (cityDisease === 'lepto') {
         const isActive = curActiveDisease === 'lepto';
         mat.color.setHex(isActive ? (isDark ? 0x115E59 : 0x0F766E) : (isDark ? 0x134E4A : 0x115E59));
         mat.emissive.setHex(isDark ? 0x14B8A6 : 0x0D9488);
@@ -320,15 +375,16 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
       curLayerFilter === 'all' || curLayerFilter === 'hotspots';
 
     barangayMeshesRef.current.forEach(({ bgy, group, meshes, borders, baseDepth: bgyDepth }) => {
+      const bgyCityDisease = getCityDisease(bgy.city);
       const isFocusCityBgy =
-        (curActiveDisease === 'dengue' && normalizeCityName(bgy.city) === 'quezon city') ||
-        (curActiveDisease === 'lepto' && normalizeCityName(bgy.city) === 'manila');
+        (curActiveDisease === 'dengue' && bgyCityDisease === 'dengue') ||
+        (curActiveDisease === 'lepto' && bgyCityDisease === 'lepto');
 
       const isInspectedCityBgy = Boolean(
         curInspectedCity && normalizeCityName(curInspectedCity.name) === normalizeCityName(bgy.city)
       );
 
-      // A barangay is active if it belongs to the focus city OR currently inspected city
+      // A barangay is active if it belongs to any active disease city OR currently inspected city
       const isCityActive = isFocusCityBgy || isInspectedCityBgy;
       const isActionFocused =
         curFocusedAction !== null &&
@@ -346,6 +402,8 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
       let parentTopY = baseDepth * 0.65;
       if (isFocusCityBgy) {
         parentTopY = activeFocusTopY;
+      } else if (bgyCityDisease !== null) {
+        parentTopY = baseDepth * (isInspectedCityBgy ? 1.25 : 1.0);
       } else if (isInspectedCityBgy) {
         parentTopY = baseDepth * 1.25;
       }
@@ -387,7 +445,7 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
         borderOp = 1.0;
       } else {
         // Non-Vulnerable Baseline Barangay — distinct boundary outlines + full hover lift & glow!
-        if (bgy.city === 'Quezon City') {
+        if (bgyCityDisease === 'dengue') {
           const baseShade = isDark
             ? DENGUE_BGY_DARK_SHADES[bgy.shade % 4]
             : DENGUE_BGY_LIGHT_SHADES[bgy.shade % 4];
@@ -396,7 +454,7 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
           emissiveInt = isHovered ? 0.52 : (isDark ? 0.12 : 0.06);
           borderHex = isHovered ? 0xFFFFFF : (isDark ? 0xFFE4E6 : 0xFFF1F2);
           borderOp = isHovered ? 1.0 : 0.78;
-        } else if (bgy.city === 'City of Manila') {
+        } else if (bgyCityDisease === 'lepto') {
           const baseShade = isDark
             ? LEPTO_BGY_DARK_SHADES[bgy.shade % 4]
             : LEPTO_BGY_LIGHT_SHADES[bgy.shade % 4];
@@ -438,9 +496,10 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
 
     // 3. Update Health Facility 3D Nodes
     facilityMeshesRef.current.forEach(({ facility, group, pillarMesh, ringMesh }) => {
+      const facCityDisease = getCityDisease(facility.city);
       const isFocusCityFacility =
-        (curActiveDisease === 'dengue' && normalizeCityName(facility.city) === 'quezon city') ||
-        (curActiveDisease === 'lepto' && normalizeCityName(facility.city) === 'manila');
+        (curActiveDisease === 'dengue' && facCityDisease === 'dengue') ||
+        (curActiveDisease === 'lepto' && facCityDisease === 'lepto');
       const isInspectedCityFacility = Boolean(
         curInspectedCity && normalizeCityName(curInspectedCity.name) === normalizeCityName(facility.city)
       );
@@ -468,6 +527,8 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
       let cityTopY = baseDepth * 0.65;
       if (isFocusCityFacility) {
         cityTopY = activeFocusTopY;
+      } else if (facCityDisease !== null) {
+        cityTopY = baseDepth * (isInspectedCityFacility ? 1.25 : 1.0);
       } else if (isInspectedCityFacility) {
         cityTopY = baseDepth * 1.25;
       }
@@ -503,9 +564,11 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
     rainfallIntensity,
     theme,
     inspectedCity,
+    uploadedCities,
     effectiveLayerFilter,
     focusedActionCode,
-    cityGridEnabled
+    cityGridEnabled,
+    getCityDisease
   ]);
 
   const syncCityAppearanceRef = useRef(syncCityAppearance);
@@ -516,6 +579,7 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
   }, [
     activeDisease,
     inspectedCity,
+    uploadedCities,
     rainfallIntensity,
     theme,
     effectiveLayerFilter,
@@ -1109,11 +1173,12 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
         const hitCity = intersects[0].object.userData?.city as NCRCityPolygon | undefined;
         if (hitCity) {
           if (onInspectCityRef.current) onInspectCityRef.current(hitCity);
-          if (hitCity.focusId && onSelectCityRef.current) {
-            onSelectCityRef.current(hitCity.focusId);
+          const hitCityDisease = getCityDisease(hitCity.name, hitCity.focusId);
+          if (hitCityDisease && onSelectCityRef.current) {
+            onSelectCityRef.current(hitCityDisease, hitCity);
             const [cx, cz] = ncrGeoTo3D(hitCity.centroid[0], hitCity.centroid[1]);
             cameraTargetRef.current.lookAt.set(cx, 0.2, cz);
-            orbitRef.current.radius = hitCity.focusId === 'dengue' ? 10.5 : 6.8;
+            orbitRef.current.radius = hitCity.name === 'Quezon City' ? 10.5 : 7.5;
           } else {
             const [cx, cz] = ncrGeoTo3D(hitCity.centroid[0], hitCity.centroid[1]);
             cameraTargetRef.current.lookAt.set(cx, 0.15, cz);
@@ -1156,6 +1221,8 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
   }, []);
 
   const isDark = theme === 'dark';
+  const dengueCities = METRO_MANILA_CITIES.filter(c => getCityDisease(c.name, c.focusId) === 'dengue');
+  const leptoCities = METRO_MANILA_CITIES.filter(c => getCityDisease(c.name, c.focusId) === 'lepto');
 
   return (
     <div ref={containerRef} className="relative w-full h-full select-none overflow-hidden">
@@ -1169,16 +1236,19 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
             : 'bg-[#FFFDF9]/95 text-stone-800 border-[#E7E1D6] shadow-stone-300/40'
         }`}
       >
-        {/* Focus Cities */}
+        {/* Focus Diseases */}
         <div className="flex items-center gap-1">
           <button
             onClick={() => {
               hoveredKeyRef.current = null;
               setHoveredEntity(null);
-              const qc = METRO_MANILA_CITIES.find(c => c.focusId === 'dengue') || null;
-              if (onInspectCity) onInspectCity(qc);
-              onSelectCity('dengue');
-              setCameraView('qc');
+              const currentInspectedDisease = inspectedCity ? getCityDisease(inspectedCity.name, inspectedCity.focusId) : null;
+              const targetCity = currentInspectedDisease === 'dengue'
+                ? inspectedCity
+                : dengueCities[dengueCities.length - 1] || METRO_MANILA_CITIES.find(c => c.focusId === 'dengue') || null;
+              if (onInspectCity) onInspectCity(targetCity);
+              onSelectCity('dengue', targetCity);
+              frameDiseaseCities('dengue');
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
               activeDisease === 'dengue'
@@ -1189,17 +1259,20 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
-            <span>QC (Dengue)</span>
+            <span>Dengue{dengueCities.length > 1 ? ` (${dengueCities.length})` : ''}</span>
           </button>
 
           <button
             onClick={() => {
               hoveredKeyRef.current = null;
               setHoveredEntity(null);
-              const mnl = METRO_MANILA_CITIES.find(c => c.focusId === 'lepto') || null;
-              if (onInspectCity) onInspectCity(mnl);
-              onSelectCity('lepto');
-              setCameraView('manila');
+              const currentInspectedDisease = inspectedCity ? getCityDisease(inspectedCity.name, inspectedCity.focusId) : null;
+              const targetCity = currentInspectedDisease === 'lepto'
+                ? inspectedCity
+                : leptoCities[leptoCities.length - 1] || METRO_MANILA_CITIES.find(c => c.focusId === 'lepto') || null;
+              if (onInspectCity) onInspectCity(targetCity);
+              onSelectCity('lepto', targetCity);
+              frameDiseaseCities('lepto');
             }}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition ${
               activeDisease === 'lepto'
@@ -1212,7 +1285,7 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-teal-400 animate-pulse" />
-            <span>Manila (Lepto)</span>
+            <span>Leptospirosis{leptoCities.length > 1 ? ` (${leptoCities.length})` : ''}</span>
           </button>
         </div>
 
@@ -1471,31 +1544,47 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
                   >
                     {hoveredEntity.data.district}
                   </span>
-                  {hoveredEntity.data.isFocus ? (
-                    <span
-                      className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
-                        hoveredEntity.data.focusId === 'dengue'
-                          ? isDark
-                            ? 'bg-rose-500/25 text-rose-300 border border-rose-500/40'
-                            : 'bg-rose-50 text-rose-800 border border-rose-200'
-                          : isDark
-                            ? 'bg-teal-500/25 text-teal-300 border border-teal-500/40'
-                            : 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                      }`}
-                    >
-                      {hoveredEntity.data.focusId === 'dengue' ? 'Dengue Data' : 'Leptospirosis Data'}
-                    </span>
-                  ) : (
-                    <span
-                      className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                        isDark
-                          ? 'bg-slate-800 text-slate-300 border border-slate-700'
-                          : 'bg-[#F4EFE6] text-stone-700 border border-[#E7E1D6]'
-                      }`}
-                    >
-                      Click to Reveal Grid &amp; Hospital
-                    </span>
-                  )}
+                  {(() => {
+                    const cityDisease = getCityDisease(hoveredEntity.data.name, hoveredEntity.data.focusId);
+                    const uploadedInfo = uploadedCities[normalizeCityName(hoveredEntity.data.name)];
+                    if (cityDisease === 'dengue') {
+                      return (
+                        <span
+                          className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                            isDark
+                              ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                              : 'bg-rose-100 text-rose-800 border border-rose-200'
+                          }`}
+                        >
+                          {uploadedInfo ? `Dengue · ${uploadedInfo.historyPoints.length} mos CSV` : 'Dengue Data'}
+                        </span>
+                      );
+                    }
+                    if (cityDisease === 'lepto') {
+                      return (
+                        <span
+                          className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                            isDark
+                              ? 'bg-teal-500/20 text-teal-300 border border-teal-500/30'
+                              : 'bg-teal-100 text-teal-800 border border-teal-200'
+                          }`}
+                        >
+                          {uploadedInfo ? `Leptospirosis · ${uploadedInfo.historyPoints.length} mos CSV` : 'Leptospirosis Data'}
+                        </span>
+                      );
+                    }
+                    return (
+                      <span
+                        className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                          isDark
+                            ? 'bg-slate-800 text-slate-300 border border-slate-700'
+                            : 'bg-stone-200 text-stone-700 border border-stone-300'
+                        }`}
+                      >
+                        Click to Reveal Grid &amp; Hospital
+                      </span>
+                    );
+                  })()}
                 </div>
 
                 <div className={`text-base font-extrabold ${isDark ? 'text-white' : 'text-stone-900'}`}>
