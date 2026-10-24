@@ -618,34 +618,6 @@ export const CaseEstimateView: React.FC<CaseEstimateViewProps> = ({
                     }`}
                   />
                 </div>
-
-                {activeDisease === 'lepto' && (
-                  <div className="flex items-center justify-between gap-2">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider ${mutedCls}`}>
-                      Surveillance Weeks:
-                    </span>
-                    <div className="flex gap-1.5">
-                      {[4, 5].map(w => (
-                        <button
-                          key={w}
-                          type="button"
-                          onClick={() => onNWeeksChange(w)}
-                          className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition ${
-                            nWeeks === w
-                              ? isDark
-                                ? 'bg-teal-600 text-white'
-                                : 'bg-stone-900 text-white'
-                              : isDark
-                              ? 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                              : 'bg-[#F4EFE6] text-stone-700 hover:bg-[#EAE3D6]'
-                          }`}
-                        >
-                          {w} wks
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
 
               {/* Collapsible Formula Accordion */}
