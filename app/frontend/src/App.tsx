@@ -4,7 +4,7 @@ import { CaseEstimateView } from './components/CaseEstimateView';
 import { UploadCityView } from './components/UploadCityView';
 import { MethodView } from './components/MethodView';
 import { fetchPrediction, PredictionResult, UploadedCityData } from './services/api';
-import { NCRCityPolygon, METRO_MANILA_CITIES, normalizeCityName } from './components/metroManilaData';
+import { NCRCityPolygon, METRO_MANILA_CITIES, normalizeCityName, getUploadedCityData, getCityAvailableDiseases, makeCityUploadKey } from './components/metroManilaData';
 import { ActionLayerFilter } from './components/actionMapData';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { DaloyAnimatedLogo } from './components/DaloyAnimatedLogo';
@@ -70,9 +70,8 @@ export const App: React.FC = () => {
           effectiveCity = METRO_MANILA_CITIES.find(c => normalizeCityName(c.name) === normalizeCityName(uploadedMatch.cityName)) || null;
         }
       }
-      const normalizedInspected = effectiveCity ? normalizeCityName(effectiveCity.name) : '';
-      const customCity = effectiveCity && uploadedCities[normalizedInspected] && uploadedCities[normalizedInspected].disease === activeDisease
-        ? uploadedCities[normalizedInspected]
+      const customCity = effectiveCity
+        ? getUploadedCityData(uploadedCities, effectiveCity.name, activeDisease)
         : null;
       fetchPrediction({
         disease: activeDisease,
@@ -126,8 +125,8 @@ export const App: React.FC = () => {
               } else {
                 setInspectedCity(prev => {
                   if (prev) {
-                    const norm = normalizeCityName(prev.name);
-                    if (uploadedCities[norm]?.disease === d || prev.focusId === d) {
+                    const available = getCityAvailableDiseases(prev.name, prev.focusId, uploadedCities);
+                    if (available.includes(d)) {
                       return prev;
                     }
                   }
@@ -206,10 +205,14 @@ export const App: React.FC = () => {
 
           {/* City & Tactical Action Layer Color Key */}
           {(() => {
-            const dengueUploaded = Object.values(uploadedCities).filter(c => c.disease === 'dengue' && normalizeCityName(c.cityName) !== 'quezon city');
-            const leptoUploaded = Object.values(uploadedCities).filter(c => c.disease === 'lepto' && normalizeCityName(c.cityName) !== 'manila');
-            const dengueTotal = 1 + dengueUploaded.length;
-            const leptoTotal = 1 + leptoUploaded.length;
+            const dengueCities = METRO_MANILA_CITIES.filter(c =>
+              getCityAvailableDiseases(c.name, c.focusId, uploadedCities).includes('dengue')
+            );
+            const leptoCities = METRO_MANILA_CITIES.filter(c =>
+              getCityAvailableDiseases(c.name, c.focusId, uploadedCities).includes('lepto')
+            );
+            const dengueTotal = dengueCities.length;
+            const leptoTotal = leptoCities.length;
 
             return (
               <div className={`hidden 2xl:flex items-center gap-3 pl-3 ml-1 border-l text-[10px] font-semibold ${
@@ -221,8 +224,8 @@ export const App: React.FC = () => {
                     setActiveDisease('dengue');
                     setInspectedCity(prev => {
                       if (prev) {
-                        const norm = normalizeCityName(prev.name);
-                        if (uploadedCities[norm]?.disease === 'dengue' || prev.focusId === 'dengue') {
+                        const available = getCityAvailableDiseases(prev.name, prev.focusId, uploadedCities);
+                        if (available.includes('dengue')) {
                           return prev;
                         }
                       }
@@ -256,8 +259,8 @@ export const App: React.FC = () => {
                     setActiveDisease('lepto');
                     setInspectedCity(prev => {
                       if (prev) {
-                        const norm = normalizeCityName(prev.name);
-                        if (uploadedCities[norm]?.disease === 'lepto' || prev.focusId === 'lepto') {
+                        const available = getCityAvailableDiseases(prev.name, prev.focusId, uploadedCities);
+                        if (available.includes('lepto')) {
                           return prev;
                         }
                       }
@@ -471,8 +474,8 @@ export const App: React.FC = () => {
             setActiveDisease(d);
             setInspectedCity(prev => {
               if (prev) {
-                const norm = normalizeCityName(prev.name);
-                if (uploadedCities[norm]?.disease === d || prev.focusId === d) {
+                const available = getCityAvailableDiseases(prev.name, prev.focusId, uploadedCities);
+                if (available.includes(d)) {
                   return prev;
                 }
               }
@@ -563,10 +566,10 @@ export const App: React.FC = () => {
                 initialCity={inspectedCity?.name}
                 uploadedCities={uploadedCities}
                 onCityUploadSuccess={data => {
-                  const key = normalizeCityName(data.cityName);
+                  const key = makeCityUploadKey(data.cityName, data.disease);
                   setUploadedCities(prev => ({ ...prev, [key]: data }));
                   setActiveDisease(data.disease);
-                  const targetCity = METRO_MANILA_CITIES.find(c => normalizeCityName(c.name) === key) || null;
+                  const targetCity = METRO_MANILA_CITIES.find(c => normalizeCityName(c.name) === normalizeCityName(data.cityName)) || null;
                   if (targetCity) {
                     setInspectedCity(targetCity);
                   }

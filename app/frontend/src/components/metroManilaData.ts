@@ -1,3 +1,4 @@
+import type { UploadedCityData } from '../services/api';
 // Accurate PSA / PSGC 2023 GeoJSON boundaries for all 17 Metro Manila (NCR) cities
 // 100% official geometry with exact boundary outlines.
 
@@ -36,6 +37,57 @@ export function ncrGeoTo3D(lon: number, lat: number): [number, number] {
   const z = -(lat - NCR_CENTER.lat) * NCR_CENTER.scale;
   return [x, z];
 }
+
+export function makeCityUploadKey(cityName: string, disease: 'dengue' | 'lepto'): string {
+  return `${normalizeCityName(cityName)}_${disease}`;
+}
+
+export function getUploadedCityData(
+  uploadedCities: Record<string, UploadedCityData> = {},
+  cityName?: string | null,
+  disease?: 'dengue' | 'lepto'
+): UploadedCityData | null {
+  if (!cityName) return null;
+  const norm = normalizeCityName(cityName);
+  if (disease) {
+    const key = `${norm}_${disease}`;
+    if (uploadedCities[key]) return uploadedCities[key];
+    if (uploadedCities[norm] && uploadedCities[norm].disease === disease) {
+      return uploadedCities[norm];
+    }
+    return null;
+  }
+  const match = Object.values(uploadedCities).find(c => normalizeCityName(c.cityName) === norm);
+  return match || null;
+}
+
+export function getCityAvailableDiseases(
+  cityName?: string | null,
+  defaultFocusId?: 'dengue' | 'lepto' | null,
+  uploadedCities: Record<string, UploadedCityData> = {}
+): ('dengue' | 'lepto')[] {
+  if (!cityName) return [];
+  const norm = normalizeCityName(cityName);
+  const diseases: ('dengue' | 'lepto')[] = [];
+
+  // Baseline trained ML models
+  if (norm === 'quezon city' || defaultFocusId === 'dengue') {
+    diseases.push('dengue');
+  }
+  if (norm === 'manila' || defaultFocusId === 'lepto') {
+    diseases.push('lepto');
+  }
+
+  // Uploaded surveillance datasets
+  Object.values(uploadedCities).forEach(u => {
+    if (normalizeCityName(u.cityName) === norm && !diseases.includes(u.disease)) {
+      diseases.push(u.disease);
+    }
+  });
+
+  return diseases;
+}
+
 
 export const METRO_MANILA_RIVERS: RiverPath[] = [
   {

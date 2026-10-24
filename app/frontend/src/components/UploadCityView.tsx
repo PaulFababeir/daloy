@@ -560,7 +560,7 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({
                         {onRemoveUploadedCity && (
                           <button
                             type="button"
-                            onClick={() => onRemoveUploadedCity(normalizeCityKey(item.cityName))}
+                            onClick={() => onRemoveUploadedCity(key)}
                             title="Remove uploaded city data"
                             className="p-1 rounded-lg text-rose-400 hover:bg-rose-500/15 transition"
                           >

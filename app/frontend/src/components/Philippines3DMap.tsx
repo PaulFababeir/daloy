@@ -4,7 +4,10 @@ import {
   METRO_MANILA_CITIES,
   METRO_MANILA_RIVERS,
   ncrGeoTo3D,
-  NCRCityPolygon
+  NCRCityPolygon,
+  normalizeCityName,
+  getCityAvailableDiseases,
+  getUploadedCityData
 } from './metroManilaData';
 import {
   HEALTH_FACILITIES,
@@ -64,13 +67,6 @@ const LEPTO_BGY_LIGHT_SHADES = [0x0D9488, 0x0F766E, 0x14B8A6, 0x115E59];
 const INSPECTED_BGY_DARK_SHADES = [0x293548, 0x334155, 0x1E293B, 0x3B4C63];
 const INSPECTED_BGY_LIGHT_SHADES = [0xD6CFC4, 0xC7BEB2, 0xDDD6CC, 0xBFB6AA];
 
-const normalizeCityName = (name?: string | null): string => {
-  if (!name) return '';
-  const n = name.trim().toLowerCase();
-  if (n === 'city of manila' || n === 'manila') return 'manila';
-  if (n.startsWith('city of ')) return n.replace('city of ', '');
-  return n;
-};
 
 export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
   activeDisease,
@@ -149,14 +145,12 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
 
   const getCityDisease = useCallback(
     (cityName?: string | null, defaultFocusId?: 'dengue' | 'lepto' | null): 'dengue' | 'lepto' | null => {
-      const norm = normalizeCityName(cityName);
-      if (norm && uploadedCitiesRef.current[norm]) {
-        return uploadedCitiesRef.current[norm].disease;
+      const available = getCityAvailableDiseases(cityName, defaultFocusId, uploadedCitiesRef.current);
+      if (available.length === 0) return null;
+      if (available.includes(activeDiseaseRef.current)) {
+        return activeDiseaseRef.current;
       }
-      if (defaultFocusId) return defaultFocusId;
-      if (norm === 'quezon city') return 'dengue';
-      if (norm === 'manila') return 'lepto';
-      return null;
+      return available[0];
     },
     []
   );
@@ -1173,9 +1167,14 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
         const hitCity = intersects[0].object.userData?.city as NCRCityPolygon | undefined;
         if (hitCity) {
           if (onInspectCityRef.current) onInspectCityRef.current(hitCity);
-          const hitCityDisease = getCityDisease(hitCity.name, hitCity.focusId);
-          if (hitCityDisease && onSelectCityRef.current) {
-            onSelectCityRef.current(hitCityDisease, hitCity);
+          const available = getCityAvailableDiseases(hitCity.name, hitCity.focusId, uploadedCitiesRef.current);
+          if (available.length > 0) {
+            const targetDisease = available.includes(activeDiseaseRef.current)
+              ? activeDiseaseRef.current
+              : available[0];
+            if (onSelectCityRef.current) {
+              onSelectCityRef.current(targetDisease, hitCity);
+            }
             const [cx, cz] = ncrGeoTo3D(hitCity.centroid[0], hitCity.centroid[1]);
             cameraTargetRef.current.lookAt.set(cx, 0.2, cz);
             orbitRef.current.radius = hitCity.name === 'Quezon City' ? 10.5 : 7.5;
@@ -1221,8 +1220,12 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
   }, []);
 
   const isDark = theme === 'dark';
-  const dengueCities = METRO_MANILA_CITIES.filter(c => getCityDisease(c.name, c.focusId) === 'dengue');
-  const leptoCities = METRO_MANILA_CITIES.filter(c => getCityDisease(c.name, c.focusId) === 'lepto');
+  const dengueCities = METRO_MANILA_CITIES.filter(c =>
+    getCityAvailableDiseases(c.name, c.focusId, uploadedCities).includes('dengue')
+  );
+  const leptoCities = METRO_MANILA_CITIES.filter(c =>
+    getCityAvailableDiseases(c.name, c.focusId, uploadedCities).includes('lepto')
+  );
 
   return (
     <div ref={containerRef} className="relative w-full h-full select-none overflow-hidden">
@@ -1242,8 +1245,8 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
             onClick={() => {
               hoveredKeyRef.current = null;
               setHoveredEntity(null);
-              const currentInspectedDisease = inspectedCity ? getCityDisease(inspectedCity.name, inspectedCity.focusId) : null;
-              const targetCity = currentInspectedDisease === 'dengue'
+              const currentAvailable = inspectedCity ? getCityAvailableDiseases(inspectedCity.name, inspectedCity.focusId, uploadedCities) : [];
+              const targetCity = inspectedCity && currentAvailable.includes('dengue')
                 ? inspectedCity
                 : dengueCities[dengueCities.length - 1] || METRO_MANILA_CITIES.find(c => c.focusId === 'dengue') || null;
               if (onInspectCity) onInspectCity(targetCity);
@@ -1266,8 +1269,8 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
             onClick={() => {
               hoveredKeyRef.current = null;
               setHoveredEntity(null);
-              const currentInspectedDisease = inspectedCity ? getCityDisease(inspectedCity.name, inspectedCity.focusId) : null;
-              const targetCity = currentInspectedDisease === 'lepto'
+              const currentAvailable = inspectedCity ? getCityAvailableDiseases(inspectedCity.name, inspectedCity.focusId, uploadedCities) : [];
+              const targetCity = inspectedCity && currentAvailable.includes('lepto')
                 ? inspectedCity
                 : leptoCities[leptoCities.length - 1] || METRO_MANILA_CITIES.find(c => c.focusId === 'lepto') || null;
               if (onInspectCity) onInspectCity(targetCity);
@@ -1545,8 +1548,32 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
                     {hoveredEntity.data.district}
                   </span>
                   {(() => {
+                    const available = getCityAvailableDiseases(hoveredEntity.data.name, hoveredEntity.data.focusId, uploadedCities);
                     const cityDisease = getCityDisease(hoveredEntity.data.name, hoveredEntity.data.focusId);
-                    const uploadedInfo = uploadedCities[normalizeCityName(hoveredEntity.data.name)];
+                    const uploadedInfo = getUploadedCityData(uploadedCities, hoveredEntity.data.name, cityDisease || undefined);
+                    if (available.length > 1) {
+                      return (
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                            activeDisease === 'dengue'
+                              ? 'bg-rose-500/25 text-rose-300 border border-rose-500/50 ring-1 ring-rose-500/30'
+                              : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'
+                          }`}>
+                            🔴 Dengue {activeDisease === 'dengue' ? '(Active)' : ''}
+                          </span>
+                          <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                            activeDisease === 'lepto'
+                              ? 'bg-teal-500/25 text-teal-300 border border-teal-500/50 ring-1 ring-teal-500/30'
+                              : 'bg-teal-500/10 text-teal-400 border border-teal-500/20'
+                          }`}>
+                            🟢 Lepto {activeDisease === 'lepto' ? '(Active)' : ''}
+                          </span>
+                          <span className="text-[9px] font-bold text-amber-400">
+                            Dual Layer
+                          </span>
+                        </div>
+                      );
+                    }
                     if (cityDisease === 'dengue') {
                       return (
                         <span
