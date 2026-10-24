@@ -256,16 +256,17 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({
 
   const handleTargetCityChange = (nextCity: string) => {
     setTargetCity(nextCity);
-    if (validationResult?.valid && onCityUploadSuccess) {
+    const activeDiseaseKey = validationResult?.disease || disease;
+    if (parsedHistory.length > 0 && onCityUploadSuccess) {
       onCityUploadSuccess({
         cityName: nextCity,
-        disease,
+        disease: activeDiseaseKey,
         fileName: file?.name || `${nextCity.toLowerCase()}.csv`,
-        rowCount: validationResult.row_count,
-        spearmanRho: validationResult.spearman_rho,
-        meanRainfall: validationResult.summary?.mean_rainfall ?? 0,
-        meanCases: validationResult.summary?.mean_cases ?? 0,
-        totalCases: validationResult.summary?.total_cases ?? 0,
+        rowCount: parsedHistory.length,
+        spearmanRho: validationResult?.spearman_rho ?? 0,
+        meanRainfall: validationResult?.summary?.mean_rainfall ?? 0,
+        meanCases: validationResult?.summary?.mean_cases ?? 0,
+        totalCases: validationResult?.summary?.total_cases ?? 0,
         historyPoints: parsedHistory
       });
     }
@@ -336,13 +337,13 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({
         const finalDisease: 'dengue' | 'lepto' = json.disease === 'lepto' ? 'lepto' : json.disease === 'dengue' ? 'dengue' : activeDiseaseKey;
         if (finalDisease !== disease) setDisease(finalDisease);
         setValidationResult(json);
-        if (json.valid && onCityUploadSuccess) {
+        if (extractedHistory.length > 0 && onCityUploadSuccess) {
           onCityUploadSuccess({
             cityName: effectiveCity,
             disease: finalDisease,
             fileName: selectedFile.name,
-            rowCount: json.row_count,
-            spearmanRho: json.spearman_rho,
+            rowCount: json.row_count || extractedHistory.length,
+            spearmanRho: json.spearman_rho ?? 0,
             meanRainfall: json.summary?.mean_rainfall ?? 0,
             meanCases: json.summary?.mean_cases ?? 0,
             totalCases: json.summary?.total_cases ?? 0,
@@ -350,7 +351,11 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({
           });
         }
         setIsLoading(false);
-        return;
+        if (onViewOnMap && extractedHistory.length > 0) {
+          setTimeout(() => {
+            onViewOnMap(effectiveCity, finalDisease);
+          }, 450);
+        }
       }
     } catch {
       // Offline fallback client validator
@@ -411,12 +416,12 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({
 
     setValidationResult(resultObj);
 
-    if (valid && onCityUploadSuccess) {
+    if (extractedHistory.length > 0 && onCityUploadSuccess) {
       onCityUploadSuccess({
         cityName: effectiveCity,
         disease: activeDiseaseKey,
         fileName: selectedFile.name,
-        rowCount,
+        rowCount: extractedHistory.length,
         spearmanRho,
         meanRainfall: meanRain,
         meanCases,
@@ -424,8 +429,12 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({
         historyPoints: extractedHistory
       });
     }
-
     setIsLoading(false);
+    if (onViewOnMap && extractedHistory.length > 0) {
+      setTimeout(() => {
+        onViewOnMap(effectiveCity, activeDiseaseKey);
+      }, 450);
+    }
   };
 
   return (

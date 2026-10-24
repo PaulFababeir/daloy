@@ -390,8 +390,10 @@ function buildPresentationMetadata(
   base: number,
   ratio: number,
   pctDiff: number,
-  levelId: 'low' | 'typ' | 'up' | 'high'
+  levelId: 'low' | 'typ' | 'up' | 'high',
+  targetCityName?: string
 ) {
+  const city = targetCityName || (key === 'dengue' ? 'Quezon City' : 'City of Manila');
   const weeklyRate = Math.round((cases / Math.max(1, nWeeks)) * 10) / 10;
   const weekly = Math.max(1, Math.round(cases / Math.max(1, nWeeks)));
   const isElevated = levelId === 'up' || levelId === 'high';
@@ -430,89 +432,91 @@ function buildPresentationMetadata(
     }
   }
 
+  const isDefaultCity = city === 'Quezon City' || city === 'City of Manila' || city === 'Manila';
+
   const actions: ActionItem[] = key === 'dengue'
     ? [
         {
           i: '4S',
-          t: 'Deploy Barangay 4S Vector Sweep',
+          t: `Deploy Barangay 4S Vector Sweep in ${city}`,
           d: 'Eliminate standing water in gutters, tires, and open containers within 48h of rainfall before Aedes larvae pupate.',
-          w: 'Barangay Health Workers (BHWs)',
+          w: `${city} Barangay Health Workers (BHWs)`,
           urgency: 'Immediate (0–48h)',
           priority: isElevated ? 'critical' : 'high',
           metric: `Sweep ~${Math.max(15, Math.round(cases * 0.45)).toLocaleString()} priority households & storm drains`,
-          target_zones: 'Brgy. Tatalon, Bagong Silangan, Roxas District'
+          target_zones: isDefaultCity ? 'Brgy. Tatalon, Bagong Silangan, Roxas District' : `${city} Flood Basins & Dense Communities`
         },
         {
           i: 'Rx',
-          t: 'Pre-position NS1 Antigen & ORS Stocks',
+          t: `Pre-position NS1 Antigen & ORS Stocks (${city})`,
           d: 'Ensure district health centers hold a 1.6x buffer of NS1 rapid diagnostic kits, oral rehydration salts, and paracetamol.',
-          w: 'Quezon City Health Department',
+          w: `${city} Health Department`,
           urgency: 'Within 72 Hours',
           priority: isElevated ? 'high' : 'routine',
           metric: `Stage ~${Math.max(40, Math.round(cases * 1.6)).toLocaleString()} NS1 test kits & ${Math.max(80, Math.round(cases * 3.0)).toLocaleString()} ORS packs`,
-          target_zones: 'Districts II & IV Super Health Centers'
+          target_zones: `${city} Super Health Centers & Primary Clinics`
         },
         {
           i: 'IV',
-          t: 'Activate Hospital Dengue Fast-Lanes',
+          t: `Activate ${city} Hospital Dengue Fast-Lanes`,
           d: 'Stand up dedicated fever triage and ambulatory IV rehydration bays ahead of the 14-day post-rainfall symptomatic peak.',
-          w: 'QC General & East Ave Medical Center',
+          w: isDefaultCity ? 'QC General & East Ave Medical Center' : `${city} Tertiary Referral Hospitals`,
           urgency: '7–14 Day Surge Window',
           priority: isCritical ? 'critical' : isElevated ? 'high' : 'routine',
           metric: `Reserve ~${Math.max(6, Math.round(cases * 0.18)).toLocaleString()} IV hydration beds (~${weekly.toLocaleString()} cases/wk)`,
-          target_zones: 'QC Tertiary Referral Hospitals'
+          target_zones: `${city} Tertiary Referral Facilities`
         },
         {
           i: 'PIO',
-          t: 'Broadcast Early Fever Consultation Alert',
+          t: `Broadcast Early Fever Consultation Alert (${city})`,
           d: 'Instruct residents with >2 days of fever to seek immediate NS1 testing, monitor warning signs, and avoid NSAIDs/aspirin.',
-          w: 'QC DRRMO & Public Information Office',
+          w: `${city} DRRMO & Public Information Office`,
           urgency: '7-Day Window',
           priority: isElevated ? 'high' : 'routine',
-          metric: `Alert 5 flood-basin barangays (${cases.toLocaleString()} projected cases)`,
-          target_zones: 'San Juan & Marikina River Basin Corridors'
+          metric: `Alert priority flood-basin barangays in ${city} (${cases.toLocaleString()} projected cases)`,
+          target_zones: `${city} Drainage & River Basin Corridors`
         }
       ]
     : [
         {
           i: 'Dx',
-          t: 'Deploy Post-Flood Doxycycline Prophylaxis',
-          d: 'Administer single-dose 200mg Doxycycline PEP within 24–72h to residents and rescue personnel exposed to street floodwaters.',
-          w: 'Manila Health Department (MHD)',
-          urgency: 'Immediate (0–48h Post-Wading)',
-          priority: isElevated ? 'critical' : 'high',
-          metric: `Pre-position ~${Math.max(60, Math.round(cases * 25)).toLocaleString()} Doxycycline (200mg) PEP courses`,
-          target_zones: 'Brgy. Sampaloc (España), Tondo I & II, Ermita'
-        },
-        {
-          i: '!',
-          t: 'Enforce Floodwater Wading Advisories',
-          d: 'Broadcast warnings against bare-skin wading in floodwaters and distribute protective boots to frontline sanitation crews.',
-          w: 'Manila DRRMO & Barangay Tanods',
-          urgency: 'Immediate (0–24h)',
+          t: `Deploy Post-Flood Doxycycline Prophylaxis (${city})`,
+          d: 'Administer single-dose 200mg Doxycycline within 24–72 hours of floodwater wading to block Leptospira interrogans spirochetemia.',
+          w: `${city} Health Department`,
+          urgency: 'Immediate (0–72h Post-Flood)',
           priority: isCritical ? 'critical' : 'high',
-          metric: `Active alerts across ${isElevated ? 5 : 3} chronic inundation corridors`,
-          target_zones: 'España Blvd, Estero de Vitas, Taft Ave'
+          metric: `Dispense ~${Math.max(30, Math.round(cases * 2.8)).toLocaleString()} prophylactic blisters across inundated clusters`,
+          target_zones: isDefaultCity ? 'España, Tondo, Sampaloc, Santa Cruz' : `${city} Inundated Barangays & Creek Corridors`
         },
         {
-          i: 'H',
-          t: 'Ready Renal Triage & Dialysis Capacity',
-          d: 'Alert nephrology and ICU teams for Weil’s disease and acute kidney injury admissions peaking 7–14 days after flood exposure.',
-          w: 'NKTI, PGH & Ospital ng Maynila',
-          urgency: '7–14 Day Incubation Window',
-          priority: isElevated ? 'critical' : 'routine',
-          metric: `Prepare ~${Math.max(2, Math.round(cases * 0.3)).toLocaleString()} acute renal/dialysis slots (~${weekly.toLocaleString()} cases/wk)`,
-          target_zones: 'Manila Tertiary & DOH Referral Hospitals'
+          i: 'HD',
+          t: `Stage Dialysis Supplies & ICU Beds (${city})`,
+          d: 'Ensure nephrology capacity for acute renal failure and pulmonary hemorrhage peaking 10–14 days post-flood.',
+          w: isDefaultCity ? 'San Lazaro Hospital & PGH' : `${city} Medical Centers & Dialysis Units`,
+          urgency: '7–14 Day Surge Window',
+          priority: isCritical ? 'critical' : isElevated ? 'high' : 'routine',
+          metric: `Stand by ~${Math.max(2, Math.round(cases * 0.12)).toLocaleString()} acute hemodialysis slots (~${weekly.toLocaleString()} cases/wk)`,
+          target_zones: `${city} Tertiary Referral Centers`
         },
         {
-          i: 'Rx',
-          t: 'Stock IV Penicillin G & Rapid Triage Kits',
-          d: 'Verify inventory of oral amoxicillin/doxycycline for mild cases and injectable Penicillin G / Ceftriaxone for moderate-severe cases.',
-          w: 'District Health Centers & Emergency Wards',
-          urgency: 'Within 72 Hours',
+          i: 'PPE',
+          t: `Issue Floodwater Wading Advisory & Boots (${city})`,
+          d: 'Mandate protective rubber boots for first responders and commute marshals navigating stagnant runoff in floodways.',
+          w: `${city} DRRMO & Barangay Chairs`,
+          urgency: 'During Flood Event',
           priority: isElevated ? 'high' : 'routine',
-          metric: `Stage ~${Math.max(15, Math.round(cases * 3.0)).toLocaleString()} adult antibiotic treatment courses`,
-          target_zones: '6 Manila Health Districts'
+          metric: `Distribute ~${Math.max(25, Math.round(cases * 1.5)).toLocaleString()} PPE kits to frontline responders`,
+          target_zones: `${city} Inundation Corridors`
+        },
+        {
+          i: 'San',
+          t: `Intensify Rodent Vector Control & Waste Clearance (${city})`,
+          d: 'Rapid collection of flood-soaked debris, drainage desilting, and zinc phosphide rodenticide baiting in wet markets.',
+          w: `${city} Sanitation Office & Engineering`,
+          urgency: 'Post-Flood Cleanup (Days 3–7)',
+          priority: isElevated ? 'high' : 'routine',
+          metric: `Target priority market & canal corridors in ${city}`,
+          target_zones: `${city} Public Markets & Drainage Outfalls`
         }
       ];
 
@@ -610,6 +614,18 @@ export async function fetchPrediction(payload: PredictPayload): Promise<Predicti
   let takeawayTitle = '';
   let takeawayBody = '';
 
+  const meta = buildPresentationMetadata(
+    key,
+    cases,
+    nWeeks,
+    mName,
+    base,
+    ratio,
+    pctDiff,
+    levelId,
+    displayCityName
+  );
+
   const tPrev = localFallback.typical(key, month === 1 ? 12 : month - 1, customHist);
 
   if (key === 'dengue') {
@@ -653,7 +669,6 @@ export async function fetchPrediction(payload: PredictPayload): Promise<Predicti
   }
 
   const sims = localFallback.similar(key, rain, prev, month, 4, customHist);
-  const meta = buildPresentationMetadata(key, cases, nWeeks, mName, base, ratio, pctDiff, levelId);
 
   const floodZones: FloodZone[] = key === 'dengue'
     ? [

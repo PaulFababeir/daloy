@@ -63,9 +63,17 @@ export const App: React.FC = () => {
   useEffect(() => {
     let isCancelled = false;
     const timer = setTimeout(() => {
-      const normalizedInspected = inspectedCity ? normalizeCityName(inspectedCity.name) : '';
-      const customCity = inspectedCity && uploadedCities[normalizedInspected] ? uploadedCities[normalizedInspected] : null;
-
+      let effectiveCity = inspectedCity;
+      if (!effectiveCity) {
+        const uploadedMatch = Object.values(uploadedCities).find(c => c.disease === activeDisease);
+        if (uploadedMatch) {
+          effectiveCity = METRO_MANILA_CITIES.find(c => normalizeCityName(c.name) === normalizeCityName(uploadedMatch.cityName)) || null;
+        }
+      }
+      const normalizedInspected = effectiveCity ? normalizeCityName(effectiveCity.name) : '';
+      const customCity = effectiveCity && uploadedCities[normalizedInspected] && uploadedCities[normalizedInspected].disease === activeDisease
+        ? uploadedCities[normalizedInspected]
+        : null;
       fetchPrediction({
         disease: activeDisease,
         month,
@@ -111,17 +119,26 @@ export const App: React.FC = () => {
         <div className="absolute inset-0 z-0">
           <Philippines3DMap
             activeDisease={activeDisease}
-            onSelectCity={d => {
+            onSelectCity={(d, city) => {
               setActiveDisease(d);
-              setInspectedCity(prev => {
-                if (prev) {
-                  const norm = normalizeCityName(prev.name);
-                  if (uploadedCities[norm]?.disease === d || prev.focusId === d) {
-                    return prev;
+              if (city) {
+                setInspectedCity(city);
+              } else {
+                setInspectedCity(prev => {
+                  if (prev) {
+                    const norm = normalizeCityName(prev.name);
+                    if (uploadedCities[norm]?.disease === d || prev.focusId === d) {
+                      return prev;
+                    }
                   }
-                }
-                return METRO_MANILA_CITIES.find(c => c.focusId === d) || null;
-              });
+                  const uploadedMatch = Object.values(uploadedCities).find(c => c.disease === d);
+                  if (uploadedMatch) {
+                    const found = METRO_MANILA_CITIES.find(c => normalizeCityName(c.name) === normalizeCityName(uploadedMatch.cityName));
+                    if (found) return found;
+                  }
+                  return METRO_MANILA_CITIES.find(c => c.focusId === d) || null;
+                });
+              }
               setActiveView('predict');
               setFocusedActionCode(null);
               setFocusedTargetCoords(null);
@@ -202,8 +219,20 @@ export const App: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setActiveDisease('dengue');
-                    const targetCity = METRO_MANILA_CITIES.find(c => c.focusId === 'dengue') || null;
-                    setInspectedCity(targetCity);
+                    setInspectedCity(prev => {
+                      if (prev) {
+                        const norm = normalizeCityName(prev.name);
+                        if (uploadedCities[norm]?.disease === 'dengue' || prev.focusId === 'dengue') {
+                          return prev;
+                        }
+                      }
+                      const uploadedMatch = Object.values(uploadedCities).find(c => c.disease === 'dengue');
+                      if (uploadedMatch) {
+                        const found = METRO_MANILA_CITIES.find(c => normalizeCityName(c.name) === normalizeCityName(uploadedMatch.cityName));
+                        if (found) return found;
+                      }
+                      return METRO_MANILA_CITIES.find(c => c.focusId === 'dengue') || null;
+                    });
                   }}
                   title="Switch to Dengue mode"
                   className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition ${
@@ -225,8 +254,20 @@ export const App: React.FC = () => {
                   type="button"
                   onClick={() => {
                     setActiveDisease('lepto');
-                    const targetCity = METRO_MANILA_CITIES.find(c => c.focusId === 'lepto') || null;
-                    setInspectedCity(targetCity);
+                    setInspectedCity(prev => {
+                      if (prev) {
+                        const norm = normalizeCityName(prev.name);
+                        if (uploadedCities[norm]?.disease === 'lepto' || prev.focusId === 'lepto') {
+                          return prev;
+                        }
+                      }
+                      const uploadedMatch = Object.values(uploadedCities).find(c => c.disease === 'lepto');
+                      if (uploadedMatch) {
+                        const found = METRO_MANILA_CITIES.find(c => normalizeCityName(c.name) === normalizeCityName(uploadedMatch.cityName));
+                        if (found) return found;
+                      }
+                      return METRO_MANILA_CITIES.find(c => c.focusId === 'lepto') || null;
+                    });
                   }}
                   title="Switch to Leptospirosis mode"
                   className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded transition ${
@@ -428,8 +469,20 @@ export const App: React.FC = () => {
           activeDisease={activeDisease}
           onDiseaseChange={d => {
             setActiveDisease(d);
-            const targetCity = METRO_MANILA_CITIES.find(c => c.focusId === d) || null;
-            setInspectedCity(targetCity);
+            setInspectedCity(prev => {
+              if (prev) {
+                const norm = normalizeCityName(prev.name);
+                if (uploadedCities[norm]?.disease === d || prev.focusId === d) {
+                  return prev;
+                }
+              }
+              const uploadedMatch = Object.values(uploadedCities).find(c => c.disease === d);
+              if (uploadedMatch) {
+                const found = METRO_MANILA_CITIES.find(c => normalizeCityName(c.name) === normalizeCityName(uploadedMatch.cityName));
+                if (found) return found;
+              }
+              return METRO_MANILA_CITIES.find(c => c.focusId === d) || null;
+            });
             setFocusedActionCode(null);
             setFocusedTargetCoords(null);
           }}

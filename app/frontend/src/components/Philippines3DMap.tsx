@@ -319,28 +319,28 @@ export const Philippines3DMap: React.FC<Philippines3DMapProps> = ({
         const isActive = curActiveDisease === 'dengue';
         mat.color.setHex(isActive ? (isDark ? 0x881337 : 0xBE123C) : (isDark ? 0x4C0519 : 0x9F1239));
         mat.emissive.setHex(0xE11D48);
-        mat.emissiveIntensity = isHovered ? (isDark ? 0.38 : 0.24) : isActive ? (isDark ? 0.14 : 0.08) : 0.03;
+        mat.emissiveIntensity = isHovered ? (isDark ? 0.45 : 0.30) : isInspected ? (isDark ? 0.28 : 0.18) : isActive ? (isDark ? 0.16 : 0.08) : 0.03;
         
-        // Stable elevation: isActive focuses to rainBoost height, isInspected to 1.25, else 1.0
-        const hScale = isActive ? 1.45 * rainBoost : (isInspected ? 1.25 : 1.0);
+        // Stable elevation: isActive focuses to rainBoost height, isInspected to 1.35, else 1.0
+        const hScale = isActive ? 1.45 * rainBoost : (isInspected ? 1.35 : 1.0);
         mesh.scale.y = hScale;
         const topY = cDepth * hScale;
         border.position.y = topY + 0.012;
-        lineMat.color.setHex(isHovered ? 0xFFFFFF : (isDark ? 0xFDA4AF : 0xFFE4E6));
-        lineMat.opacity = isHovered ? 1.0 : 0.85;
+        lineMat.color.setHex(isHovered || isInspected ? 0xFFFFFF : (isDark ? 0xFDA4AF : 0xFFE4E6));
+        lineMat.opacity = isHovered || isInspected ? 1.0 : 0.85;
       } else if (cityDisease === 'lepto') {
         const isActive = curActiveDisease === 'lepto';
         mat.color.setHex(isActive ? (isDark ? 0x115E59 : 0x0F766E) : (isDark ? 0x134E4A : 0x115E59));
         mat.emissive.setHex(isDark ? 0x14B8A6 : 0x0D9488);
-        mat.emissiveIntensity = isHovered ? (isDark ? 0.38 : 0.24) : isActive ? (isDark ? 0.16 : 0.08) : 0.03;
+        mat.emissiveIntensity = isHovered ? (isDark ? 0.45 : 0.30) : isInspected ? (isDark ? 0.28 : 0.18) : isActive ? (isDark ? 0.18 : 0.08) : 0.03;
         
-        // Stable elevation: isActive focuses to rainBoost height, isInspected to 1.25, else 1.0
-        const hScale = isActive ? 1.45 * rainBoost : (isInspected ? 1.25 : 1.0);
+        // Stable elevation: isActive focuses to rainBoost height, isInspected to 1.35, else 1.0
+        const hScale = isActive ? 1.45 * rainBoost : (isInspected ? 1.35 : 1.0);
         mesh.scale.y = hScale;
         const topY = cDepth * hScale;
         border.position.y = topY + 0.012;
-        lineMat.color.setHex(isHovered ? 0xFFFFFF : (isDark ? 0x5EEAD4 : 0xCCFBF1));
-        lineMat.opacity = isHovered ? 1.0 : 0.85;
+        lineMat.color.setHex(isHovered || isInspected ? 0xFFFFFF : (isDark ? 0x5EEAD4 : 0xCCFBF1));
+        lineMat.opacity = isHovered || isInspected ? 1.0 : 0.85;
       } else {
         const baseGray = isDark
           ? DARK_GRAY_SHADES[city.grayShade] || 0x1E293B
