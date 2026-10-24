@@ -16,6 +16,9 @@ from typing import Dict, List, Optional, Any
 from dataset.dengue.main import dengue_model
 from dataset.leptos.main import leptos_model
 
+from datetime import datetime
+import pandas as pd
+
 
 BASE_DIR = Path(__file__).resolve().parent
 
@@ -199,8 +202,14 @@ class DaloyEngine:
         p_val = prev if prev is not None else rain
         rate = math.exp(c['a'] + c['bc'] * z(rain) + c['bp'] * z(p_val) + c['bs'] * math.sin(ang) + c['bcs'] * math.cos(ang))
         return max(0.0, rate * (n_weeks or 4))
+    
+    def n_weeks_in_month(self, month):
+        year = datetime.now().year
+        days = pd.date_range(f"{year}-{month:02d}-01", periods=pd.Timestamp(year, month, 1).days_in_month)
+        return int((days.day_of_week == 0).sum())
 
-    def predict_raw(self, key: str, rain: float, prev: Optional[float], month: int, n_weeks: int = 4) -> float:
+    def predict_raw(self, key: str, rain: float, prev: Optional[float], month: int) -> float:
+        n_weeks = self.n_weeks_in_month(month)
         p_val = prev if prev is not None else rain
         month_name = MONTHS[int(month) - 1] if isinstance(month, int) or str(month).isdigit() else str(month)
 

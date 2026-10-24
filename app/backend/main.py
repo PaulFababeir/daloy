@@ -137,7 +137,7 @@ def predict(req: PredictRequest):
     n_weeks = req.n_weeks or 4
     prev = req.prev_rain if req.prev_rain is not None else req.rain
 
-    raw_pred = engine.predict_raw(key, req.rain, prev, req.month, n_weeks)
+    raw_pred = engine.predict_raw(key, req.rain, prev, req.month)
     cases = max(0, round(raw_pred))
 
     # 95% Poisson Interval
@@ -164,7 +164,7 @@ def predict(req: PredictRequest):
             f"Last month: {round(prev):,} mm (median {round(t_prev):,} mm). "
             "Both months' rainfall and seasonal cycle drive Aedes larval habitat proliferation."
         )
-        up_pred = engine.predict_raw(key, req.rain + 100, prev, req.month, n_weeks)
+        up_pred = engine.predict_raw(key, req.rain + 100, prev, req.month)
         eff_pct = round((up_pred / raw_pred - 1.0) * 100) if raw_pred > 0 else 0
         effect_text = (
             f"At this rainfall level, each extra 100 mm adds about {eff_pct}% more cases "
