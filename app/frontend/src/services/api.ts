@@ -534,53 +534,141 @@ export async function fetchPrediction(payload: PredictPayload): Promise<Predicti
     ? customCity.historyPoints
     : undefined;
 
-  if (!customCity) {
-    try {
-      const res = await fetch('/api/predict', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+  const defaultBaseVal = localFallback.baseline(key, month);
+  const baseVal = localFallback.baseline(key, month, customHist);
+  const targetCityName = customCity ? customCity.cityName : (key === 'dengue' ? 'Quezon City' : 'Manila');
+  const monthNameStr = MONTH_NAMES[month - 1];
 
-      if (res.ok) {
-        const data = await res.json();
-        const meta = buildPresentationMetadata(
-          key,
-          data.predicted_cases,
-          data.n_weeks || nWeeks,
-          data.month_name || MONTH_NAMES[month - 1],
-          data.baseline_cases,
-          data.ratio_to_baseline,
-          data.pct_diff_baseline,
-          data.level_id
-        );
-        return {
-          ...data,
-          raw_model_output: [data.predicted_cases],
-          model_name:
-            key === 'dengue'
-              ? 'PoissonRegressor (Log-Link GLM)'
-              : 'HistGradientBoostingRegressor (Poisson)',
-          weekly_rate: meta.weeklyRate,
-          takeaway_title: meta.takeawayTitle,
-          takeaway_body: meta.takeawayBody,
-          actions: meta.actions,
-          response_curve: localFallback.buildResponseCurve(
-            key,
-            rain,
-            prev,
-            month,
-            nWeeks,
-            data.predicted_cases,
-            data.history_points
-          ),
-          seasonal_profile: localFallback.buildSeasonalProfile(key, data.history_points),
-          is_live_backend: true
-        };
+  // Directly call the dedicated ML model endpoint (/api/predict/dengue or /api/predict/leptos)
+  try {
+    const endpoint = key === 'dengue' ? '/api/predict/dengue' : '/api/predict/leptos';
+    const reqBody = {
+      curr_month_rainfall: rain,
+      prev_month_rainfall: prev,
+      month: monthNameStr,
+      experimental: Boolean(customCity),
+      city: customCity ? customCity.cityName.trim().replace(/ /g, '_').toLowerCase() : null
+    };
+
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(reqBody)
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      const rawPred = Array.isArray(data.cases) && data.cases.length > 0
+        ? Number(data.cases[0])
+        : 0;
+      const cases = Math.max(0, Math.round(rawPred));
+      const weeklyRate = Math.round((rawPred / Math.max(1, nWeeks)) * 10) / 10;
+      const margin = 1.96 * Math.sqrt(Math.max(1, rawPred));
+      const lo = Math.max(0, Math.round(rawPred - margin));
+      const hi = Math.max(lo, Math.round(rawPred + margin));
+
+      const ratio = baseVal > 0 ? rawPred / baseVal : 1.0;
+      const pctDiff = Math.round((ratio - 1.0) * 100);
+
+      let levelId: 'low' | 'typ' | 'up' | 'high' = 'typ';
+      let levelLabel = 'Typical';
+      if (ratio < 0.8) { levelId = 'low'; levelLabel = 'Below typical'; }
+      else if (ratio <= 1.2) { levelId = 'typ'; levelLabel = 'Typical'; }
+      else if (ratio <= 1.6) { levelId = 'up'; levelLabel = 'Above typical'; }
+      else { levelId = 'high'; levelLabel = 'Well above typical'; }
+
+      const tRain = localFallback.typical(key, month, customHist);
+      const rainCmp = rain > tRain * 1.15 ? 'more' : rain < tRain * 0.85 ? 'less' : 'about the same';
+      const tPrev = localFallback.typical(key, month === 1 ? 12 : month - 1, customHist);
+
+      let whyText = '';
+      let effectText = '';
+      if (key === 'dengue') {
+        whyText = `This month: ${Math.round(rain).toLocaleString()} mm (${
+          rainCmp === 'about the same' ? 'about the usual' : rainCmp + ' than the usual'
+        } ${monthNameStr} median of ${Math.round(tRain).toLocaleString()} mm in ${targetCityName}). Last month: ${Math.round(prev).toLocaleString()} mm (median ${Math.round(tPrev).toLocaleString()} mm). Both months' rainfall and seasonal cycle drive Aedes larval habitat proliferation.`;
+        effectText = `Live ML Model (${endpoint}): [${rawPred.toFixed(1)}] -> ${cases} cases (~${weeklyRate}/week across ${nWeeks} weeks).`;
+      } else {
+        whyText = `This month: ${Math.round(rain).toLocaleString()} mm (median ${Math.round(tRain).toLocaleString()} mm in ${targetCityName}) · Last month: ${Math.round(prev).toLocaleString()} mm (median ${Math.round(tPrev).toLocaleString()} mm). Both months drive soil saturation and street flood wading exposure.`;
+        effectText = `Live ML Model (${endpoint}): [${rawPred.toFixed(1)}] -> ${cases} cases (~${weeklyRate}/week across ${nWeeks} weeks).`;
       }
-    } catch {
-      // Backend unreachable, run seamless local engine fallback
+
+      const meta = buildPresentationMetadata(
+        key,
+        cases,
+        nWeeks,
+        monthNameStr,
+        baseVal,
+        ratio,
+        pctDiff,
+        levelId,
+        targetCityName
+      );
+
+      const sims = localFallback.similar(key, rain, prev, month, 4, customHist);
+
+      const floodZones: FloodZone[] = key === 'dengue'
+        ? [
+            { name: 'Barangay Tatalon', risk: 'High', level: 3, desc: 'San Juan River overflow zone; dense residential drainage corridor' },
+            { name: 'Barangay Bagong Silangan', risk: 'High', level: 3, desc: 'Marikina River tributary floodplain; rapid inundation risk' },
+            { name: 'Barangay Roxas District', risk: 'Medium', level: 2, desc: 'Low elevation basin near Scout area creek outlets' },
+            { name: 'Barangay Doña Imelda', risk: 'Medium', level: 2, desc: 'Bordering San Juan River; vulnerable during heavy monsoon surges' },
+            { name: 'Barangay Batasan Hills', risk: 'Low', level: 1, desc: 'Elevated terrain; localized gully erosion and pocket ponding' }
+          ]
+        : [
+            { name: 'Barangay Sampaloc (Espana corridor)', risk: 'High', level: 3, desc: 'Chronic street-level flooding; primary leptospirosis cluster zone' },
+            { name: 'Barangay Tondo I & II', risk: 'High', level: 3, desc: 'Estero de Vitas tidal influence and high wading frequency' },
+            { name: 'Barangay Ermita - Taft Ave', risk: 'Medium', level: 2, desc: 'Storm drain backup; pedestrian and commuter contact risk' },
+            { name: 'Barangay Santa Ana', risk: 'Medium', level: 2, desc: 'Pasig River tidal bend flood zone during monsoon tides' },
+            { name: 'Barangay Paco', risk: 'Low', level: 1, desc: 'Estero de Paco catchment; mitigated by pumping station operations' }
+          ];
+
+      return {
+        disease: key === 'dengue' ? 'Dengue' : 'Leptospirosis',
+        city: targetCityName,
+        month,
+        month_name: monthNameStr,
+        rain,
+        prev_rain: prev,
+        n_weeks: nWeeks,
+        predicted_cases: cases,
+        raw_estimate: Math.round(rawPred * 10) / 10,
+        raw_model_output: Array.isArray(data.cases) ? data.cases : [rawPred],
+        model_name:
+          key === 'dengue'
+            ? 'PoissonRegressor (Log-Link GLM)'
+            : 'HistGradientBoostingRegressor (Poisson)',
+        weekly_rate: weeklyRate,
+        ci_lower: lo,
+        ci_upper: hi,
+        baseline_cases: Math.round(baseVal * 10) / 10,
+        ratio_to_baseline: Math.round(ratio * 100) / 100,
+        pct_diff_baseline: pctDiff,
+        level_id: levelId,
+        level_label: levelLabel,
+        takeaway_title: meta.takeawayTitle,
+        takeaway_body: meta.takeawayBody,
+        why_text: whyText,
+        effect_text: effectText,
+        similar_months: sims,
+        actions: meta.actions,
+        flood_zones: floodZones,
+        response_curve: localFallback.buildResponseCurve(
+          key,
+          rain,
+          prev,
+          month,
+          nWeeks,
+          cases,
+          customHist
+        ),
+        seasonal_profile: localFallback.buildSeasonalProfile(key, customHist),
+        history_points: customHist || (key === 'dengue' ? localFallback.dengueHistory : localFallback.leptoHistory),
+        is_live_backend: true
+      };
     }
+  } catch {
+    // Backend unreachable, run seamless local engine fallback
   }
 
   // Scale prediction to custom city's historical baseline if custom city CSV is active
