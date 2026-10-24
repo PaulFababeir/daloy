@@ -42,3 +42,7 @@ Thumbs.db
 
 # AI assistant local config
 .claude/
+
+# Runtime temporary uploads
+app/backend/temp_uploads/*
+!app/backend/temp_uploads/manila.csv
