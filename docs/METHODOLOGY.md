@@ -1,187 +1,86 @@
-# DALOY: Outbreak & Flood Surveillance Platform — Methodology Specification
+# Methodology
 
-> **Platform:** DALOY (Data-driven Analytics & Localized Outbreak Yields)  
-> **Geographic Scope:** Metro Manila (National Capital Region, NCR), Philippines — 17 Local Government Units (LGUs)  
-> **Diseases Monitored:** Dengue Fever (*Aedes aegypti* vector) & Leptospirosis (*Leptospira* spirochete)  
-> **Last Updated:** October 2026 (PJDSC 2026 Hackathon Finalist Submission)  
+This explains how DALOY gets from rainfall to a case estimate, how we checked whether the estimates are any good, and where they fall short. The code lives in `app/backend/dataset/` (models) and `app/backend/prediction_engine.py` (everything around them). The numbers in section 4 come from `scripts/evaluate_models.py`, so you can rerun them yourself.
 
----
+## 1. The question
 
-## 1. Executive Summary & Problem Formulation
+Case reports for dengue and leptospirosis reach local health offices about two to three weeks late. Rainfall is measured by satellite within days. If rainfall carries enough information about cases, a city could estimate this month's caseload weeks before the reports arrive and prepare earlier.
 
-In Metro Manila, monsoon rains (*Habagat*) and tropical cyclones trigger concurrent spikes in two climate-sensitive infectious diseases through distinct hydrological mechanisms:
-1. **Dengue Fever:** Driven by intermittent rainfall and urban container stagnation, creating breeding grounds for *Aedes aegypti* mosquitoes with a multi-week incubation and vector proliferation cycle.
-2. **Leptospirosis:** A waterborne bacterial zoonosis caused by *Leptospira interrogans*, transmitted directly through skin abrasion contact with floodwaters contaminated by infected rodent urine. Outbreaks exhibit an acute post-flood lag of 1 to 2 weeks.
+So both models answer the same question: *given this month's rainfall, last month's rainfall and the time of year, how many cases should we expect this month?* It's an estimate of the present (a nowcast). We don't claim to forecast future months.
 
-**DALOY** operationalizes meteorological and epidemiological data into a **real-time 3D geospatial digital twin**, bridging predictive epidemiological modeling with tactical public health response. The platform couples predictive models with localized action directives, 10 flood-vulnerable hotspot grids, and 36 public hospitals and super health centers across the 17 NCR municipalities.
+## 2. Data
 
----
+Details on every column and licence are in [DATA.md](DATA.md). In short:
 
-## 2. Data Sources & Ingestion Pipeline
+- **Leptospirosis, Manila.** Weekly case counts from 2001 to 2012 from the EIDC hydro-epidemiological leptospirosis dataset (De Stercke et al., 2023), matched with daily NASA POWER rainfall at a point in Manila (14.5995°N, 120.9842°E).
+- **Dengue, Quezon City.** Weekly confirmed and probable cases from 2010 to 2025, with weekly satellite rainfall (`RF_NASA`, from NASA GPM IMERG), from the UPRI-NOAH dataset (Pelitro et al., 2026).
 
-### 2.1 Epidemiological Surveillance Records
-* **Dengue Fever (Quezon City, 2010–2025):**
-  * Source: Quezon City Epidemiology and Surveillance Division (QCESD) via the Philippine Integrated Disease Surveillance and Response (PIDSR) system, compiled in the UPRI-NOAH dataset (*Pelitro et al., 2026*, CC BY 4.0).
-  * Temporal Coverage: 832 consecutive weeks aggregated into 180+ monthly surveillance bins.
-  * Target Metric: Total monthly confirmed and probable dengue cases (`DC_QC`).
-* **Leptospirosis (City of Manila, 2001–2012):**
-  * Source: Hydro-epidemiological data for Leptospirosis (*De Stercke et al., 2023*, NERC EDS / Open Government Licence v3.0).
-  * Temporal Coverage: 143 months of surveillance reporting weekly case counts and reporting period week counts ($n_{\text{weeks}} \in \{4, 5\}$).
-  * Target Metric: Weekly incidence rate normalized to monthly volume:
-    $$\text{Cases}_{\text{monthly}} = \text{Rate}_{\text{weekly}} \times n_{\text{weeks}}$$
+### Why monthly
 
-### 2.2 Satellite & Meteorological Reanalysis
-* **NASA GPM IMERG & NASA POWER:**
-  * Quezon City Centroid: $14.6760^\circ\text{N}, 121.0437^\circ\text{E}$
-  * City of Manila Centroid: $14.5995^\circ\text{N}, 120.9842^\circ\text{E}$
-  * Primary Ingested Feature: Surface precipitation accumulation (mm/month, `RF_NASA`).
-  * Secondary Engineering: Antecedent rainfall lag ($\text{Rain}_{t-1}$, mm) capturing ground saturation and residual flood stagnation.
+We started with weekly data. It didn't work well: a few outbreak weeks with very high counts pulled every model toward them, and week-to-week noise swamped the rainfall signal. Monthly totals are smoother and closer to how city health offices plan anyway, so we aggregated both series to months.
 
-### 2.3 Rationale for Monthly Aggregation
-Daily and weekly epidemiological records in Metro Manila suffer from pronounced reporting artifacts:
-* Clumping of case notifications on Mondays and post-typhoon reporting backlogs.
-* Stochastic zero-inflation during dry months.
-Aggregating to calendar monthly resolution ($M_t$) filters high-frequency noise while aligning with public health budgetary, supply chain, and vector control planning cycles.
+- Leptospirosis weeks are assigned to the month they start in. Because months have either 4 or 5 case weeks, we keep that count (`n_weeks`) and model the *weekly rate* (cases ÷ `n_weeks`), then multiply back. Otherwise a 5-week month would look like a small outbreak.
+- Dengue weeks are assigned to the month that contains most of their days, and cases and rainfall are summed. The source dataset isn't fully consistent about whether its week numbers are ISO weeks or plain 7-day blocks (its own README says so), so a few weeks near month boundaries could land in the neighbouring month.
 
----
+## 3. Models
 
-## 3. Mathematical & Machine Learning Formulations
+Both models use the same four inputs:
 
-### 3.1 Dengue: Regularized Poisson Generalized Linear Model (GLM)
-Dengue case counts $Y_t \in \mathbb{N}_0$ follow an overdispersed count distribution conditioned on monthly precipitation $R_t$:
+| Feature | Why |
+|---|---|
+| `log(1 + rain this month)` | the main signal; the log stops a single very wet month from dominating |
+| `log(1 + rain last month)` | leptospirosis peaks about two weeks after heavy rain (Matsushita et al., 2018), so last month's rain matters for this month's cases |
+| `sin(2πm/12)`, `cos(2πm/12)` | the time of year, written so that December and January are close together |
 
-$$\mathbb{E}[Y_t \mid R_t] = \mu_t = \exp\left(\beta_0 + \beta_1 z(R_t)\right)$$
+**Leptospirosis: gradient boosting with a Poisson loss.** scikit-learn's `HistGradientBoostingRegressor(loss="poisson", max_depth=2, learning_rate=0.05, max_iter=150, min_samples_leaf=5, random_state=42)`, trained on the weekly rate. We kept the trees very shallow and the learning rate low because there are only 143 usable months. Gradient boosting was worth it here because the rainfall effect isn't a straight line: moderate rain does little, very heavy rain (the kind that floods streets) does a lot.
 
-Where:
-* $z(R_t) = \frac{\log(1 + R_t) - \bar{x}}{\sigma_x}$ represents standardized log-transformed precipitation.
-* The model is fitted using scikit-learn `PoissonRegressor(alpha=0.1, max_iter=300)` with L2 penalty minimizing the Poisson deviance loss:
+**Dengue: Poisson regression.** A `StandardScaler` followed by `PoissonRegressor(alpha=0.1)`, trained on monthly case counts. Poisson regression is the standard choice for counts and its coefficients are easy to explain. The small L2 penalty keeps the coefficients stable.
 
-$$\mathcal{D}(y, \hat{y}) = 2 \sum_{t=1}^N \left( y_t \log\frac{y_t}{\hat{y}_t} - (y_t - \hat{y}_t) \right) + \frac{\alpha}{2} \|\beta\|_2^2$$
+> Note: the proposal describes the dengue model as using same-month rainfall only. The app uses all four features above. We tested both (section 4) and the four-feature version is better, so that's the one in the code.
 
-* **Effect Size Formulation:** An unpenalized Poisson regression parameterized per 100 mm of precipitation yields $\exp(\beta_{\text{100mm}})$, quantifying the percentage surge in dengue incidence per 100 mm rainfall increment.
+### Around the model
 
-### 3.2 Leptospirosis: Histogram Gradient Boosting with Poisson Loss
-Leptospirosis dynamics exhibit non-linear threshold responses: dry-season baseline vs. acute monsoon inundation. We deploy a `HistGradientBoostingRegressor` parameterized with Poisson deviance loss:
+- **Range.** The app shows a 95% range of ±1.96 × √(estimate), which is the spread you'd expect from Poisson counting noise alone. It does not include model error, so for dengue the real uncertainty is much wider than the range shown (see the MAE below).
+- **Compared with a typical month.** The estimate is divided by the average for the same calendar month across the history. Below 0.8× is "below typical", 0.8–1.2× "typical", 1.2–1.6× "above typical", and above 1.6× "well above typical". These cut-offs are our own; they aren't DOH thresholds.
+- **Most similar past month.** The app ranks every month in the history by a weighted distance on this month's rainfall, last month's rainfall (both scaled by the rainfall standard deviation) and the gap in calendar months, and shows the closest four. The match is on rainfall, not on cases, so a similar month can have had a very different outcome. That's partly the point: it shows how much else, beyond rain, drives cases.
+- **Action plan.** Resource targets (households to sweep, test kits, IV beds, doxycycline courses) are scaled from the estimated cases using planning ratios we set ourselves, following the DOH 4S dengue strategy and post-flood doxycycline prophylaxis guidance. They are meant as a starting point for planning, not as quotas.
+- **Flood-prone barangays and facilities** are a list we put together by hand from publicly reported flood areas and known referral hospitals. They are not yet computed from flood hazard maps.
 
-* **Input Vector:**
-  $$\mathbf{x}_t = \begin{bmatrix} \log(1 + R_t) \\ \log(1 + R_{t-1}) \\ \sin\left(\frac{2\pi m_t}{12}\right) \\ \cos\left(\frac{2\pi m_t}{12}\right) \end{bmatrix}$$
-  * $R_t$: Current month cumulative rainfall (mm).
-  * $R_{t-1}$: Antecedent 1-month lag rainfall (mm).
-  * Harmonic cyclical features encode annual monsoonal seasonality.
-* **Target Variable:** Weekly case rate $r_t = \frac{Y_t}{n_{\text{weeks}, t}}$.
-* **Hyperparameters:**
-  * `loss="poisson"`
-  * `max_depth=2` (preventing overfitting on extreme typhoon outliers like Ondoy 2009)
-  * `learning_rate=0.05`
-  * `max_iter=150`
-  * `min_samples_leaf=5`
+## 4. Validation
 
----
+We used **leave-one-year-out cross-validation**. Each year is held out, the model is trained on all the other years, and the held-out months are predicted. The predictions from every fold are pooled and scored. Holding out whole years keeps a season's months together, so the model is never tested on a month whose neighbours it has already seen.
 
-## 4. Cross-Validation & Benchmark Performance
+The baseline is the simplest reasonable guess: the average for that calendar month in the other years (for leptospirosis, the average weekly rate times `n_weeks`). A model is only useful if it beats that.
 
-To prevent temporal data leakage, models were evaluated strictly using **Leave-One-Year-Out Cross-Validation (LOYOCV)**:
-For each year $k \in \{1, \dots, K\}$, all records from year $k$ were held out as the test fold while training on the remaining $K-1$ years. Predictions across all holdout folds were concatenated to compute out-of-fold generalization metrics.
+| Model | Months | MAE | RMSE | R² | Spearman ρ | RMSE on log(1+cases) |
+|---|---|---|---|---|---|---|
+| Leptospirosis, seasonal baseline | 143 | 16.95 | 43.70 | 0.099 | 0.834 | 0.815 |
+| Leptospirosis, gradient boosting | 143 | **10.42** | **26.36** | **0.672** | **0.873** | **0.664** |
+| Dengue, seasonal baseline | 191 | **254.2** | **371.6** | **0.264** | 0.517 | **0.900** |
+| Dengue, Poisson, rain only (proposal) | 191 | 291.0 | 401.4 | 0.141 | 0.417 | 1.002 |
+| Dengue, Poisson, rain + last month + season (app) | 191 | 264.6 | 380.5 | 0.228 | **0.530** | 0.916 |
 
-### 4.1 Quantitative Results Table
+What we take from this:
 
-| Disease & Target LGU | Model Architecture | LOYOCV Spearman $\rho$ | $p$-value | LOYOCV MAE | Baseline MAE | Error Reduction |
-|---|---|:---:|:---:|:---:|:---:|:---:|
-| **Dengue** (Quezon City) | Poisson GLM ($\alpha=0.1$) | **0.528** | $< 0.001$ | **214.3** | 328.7 | **34.8%** |
-| **Leptospirosis** (Manila) | HistGradientBoosting (Poisson) | **0.612** | $< 0.001$ | **8.42** | 13.91 | **39.5%** |
+- **Leptospirosis:** rainfall clearly helps. The model's error is about 40% lower than the baseline and it explains about two thirds of the month-to-month variation. This lines up with the Manila hospital study by Matsushita et al. (2018), which found the same rain–leptospirosis link in the same city and years.
+- **Dengue:** rainfall on its own does not beat knowing the month. The app model is close to the baseline and ranks months slightly better (ρ 0.53 vs 0.52), but its average error is a little worse. Rain alone is clearly worse. Dengue in Metro Manila also depends on humidity, temperature and the existing level of infection (Carvajal et al., 2018), and our model has none of those.
 
-* Baseline represents the historical mean of all other years for the corresponding calendar month.
-* Both models achieve statistically significant rank correlation ($\rho > 0.50$, $p < 0.001$), demonstrating reliable discrimination between low-risk and high-risk outbreak scenarios.
+Leave-one-year-out training uses years both before and after the one being predicted. So these scores show how well rainfall *explains* cases, which is a slightly easier test than true forecasting.
 
----
+## 5. Limitations
 
-## 5. Nearest Historical Analogue Search Engine
+- Two cities only, and the leptospirosis data stops in 2012.
+- Rainfall and season are the only inputs.
+- Reported cases depend on testing and reporting, which changed over the years, most visibly in 2020–2021 during COVID-19.
+- The range shown in the app ignores model error.
+- For an uploaded city, the app refits the same model on the user's data. We can't vouch for the results; that's why the feature is marked experimental and needs at least 24 months of data.
 
-When simulating scenario rainfall $R^*$ and antecedent rainfall $R^*_{\text{prev}}$ for month $m^*$, DALOY queries the historical surveillance catalog to find the most hydro-meteorologically similar historical month $t^*$:
+## References
 
-$$t^* = \arg\min_{t} D(\mathbf{x}^*, \mathbf{x}_t)$$
+Carvajal, T. M., Viacrusis, K. M., Hernandez, L. F. T., Ho, H. T., Amalin, D. M., & Watanabe, K. (2018). Machine learning methods reveal the temporal pattern of dengue incidence using meteorological factors in metropolitan Manila, Philippines. *BMC Infectious Diseases, 18*(1), 183. https://doi.org/10.1186/s12879-018-3066-0
 
-Where the normalized Euclidean distance metric is defined as:
+De Stercke, S., Buytaert, W., Mijic, A., Templeton, M., Zulkafli, Z., Ab Rahman, J., Tahir, W., Rahmat, F., Jayaramu, V., Salwa Ibrahim, S., Ismail, M., Juraiza Ishak, A., & Abdul Rahman, R. Z. (2023). *Hydro-epidemiological data for leptospirosis for areas in Brazil, Malaysia, Philippines, Argentina, China and Sri Lanka, 1978-2020* [Data set]. NERC EDS Environmental Information Data Centre. https://doi.org/10.5285/56f42170-3678-4586-b8c8-9b05f03125e1
 
-$$D(\mathbf{x}^*, \mathbf{x}_t) = \sqrt{ w_R \left(\frac{R^* - R_t}{\sigma_R}\right)^2 + w_{\text{prev}} \left(\frac{R^*_{\text{prev}} - R_{t-1}}{\sigma_{R_{\text{prev}}}}\right)^2 + w_m \Delta_{\text{circ}}(m^*, m_t)^2 }$$
+Matsushita, N., Ng, C. F. S., Kim, Y., Suzuki, M., Saito, N., Ariyoshi, K., Salva, E. P., Dimaano, E. M., Villarama, J. B., Go, W. S., & Hashizume, M. (2018). The non-linear and lagged short-term relationship between rainfall and leptospirosis and the intermediate role of floods in the Philippines. *PLOS Neglected Tropical Diseases, 12*(4), e0006331. https://doi.org/10.1371/journal.pntd.0006331
 
-* $\Delta_{\text{circ}}(a, b) = \min(|a - b|, 12 - |a - b|) / 6$ computes cyclical calendar distance.
-* This surfaces the exact historical month (e.g., August 2012 Habagat or September 2009 Ondoy), its recorded rainfall, and the actual verified case burden, providing immediate clinical and historical context to decision-makers.
-
----
-
-## 6. 3D Geospatial Digital Twin & Tactical Action Layers
-
-### 6.1 Geographic Data & Boundary Precision
-* **17 NCR Local Government Units:** Extruded 3D polygonal meshes derived from official **PSA/PSGC 2023** administrative boundaries with centroid geo-coordinates.
-* **827 Official Barangays:** Complete sub-municipal coverage across Metro Manila, enabling granular hover inspection, boundary rendering, and spatial querying.
-
-### 6.2 Prioritized Vulnerable Action Zones (10 Hotspots)
-Calibrated with UP NOAH flood hazard maps, MGB alluvial flood zones, and local epidemiological density:
-1. **Quezon City (Dengue):**
-   * *Barangay Tatalon:* San Juan River basin corridor, high post-flood container stagnation.
-   * *Barangay Bagong Silangan:* Upper Marikina River tributary floodplain.
-   * *Barangay Roxas District:* Low-lying basin near Diliman Creek drainage outlets.
-   * *Barangay Doña Imelda:* San Juan River & Araneta Ave low-elevation border.
-   * *Barangay Batasan Hills:* High-density urban pocket with variable terrace drainage.
-2. **City of Manila (Leptospirosis):**
-   * *Sampaloc (España Blvd Corridor):* Chronic severe street flooding and commercial runoff.
-   * *Tondo I & II:* Manila Bay coastal tidal backflow and high rodent-human contact density.
-   * *Ermita / Taft Avenue Corridor:* Low-elevation stormwater stagnation corridor.
-   * *Santa Ana:* Sharp meander of the Pasig River vulnerable to overtopping.
-   * *Paco:* Estero de Paco drainage basin with residential stormwater accumulation.
-
-### 6.3 Spatial Verification of 36 Health Facilities
-All 36 public hospitals and health staging hubs were spatially verified using Point-in-Polygon (PIP) raycasting against official PSA administrative boundaries:
-* **Result:** **100% (36/36) verified** inside their respective city boundaries with zero out-of-bounds coordinates.
-* **Tertiary Referral Hospitals (18):** e.g., Philippine General Hospital (PGH), San Lazaro Hospital (national infectious disease referral center), East Avenue Medical Center, National Kidney and Transplant Institute (NKTI - hemodialysis surge capacity).
-* **Super Health Centers & Staging Hubs (18):** Localized distribution points for rapid diagnostic kits (NS1/IgM), Oral Rehydration Salts (ORS), and prophylactic Doxycycline.
-
----
-
-## 7. Tactical Action Protocol Matrix
-
-DALOY maps predicted case thresholds directly to four standardized public health operational protocols:
-
-```
-+-----------------------------------------------------------------------------------------+
-| CODE  | PROTOCOL TITLE             | TARGET DISEASE | CLINICAL / PUBLIC HEALTH DIRECTIVE |
-+-----------------------------------------------------------------------------------------+
-| 4S    | Search & Destroy Sweeps    | Dengue         | Mobilize BHW teams within 48h of   |
-|       |                            |                | rainfall to eliminate stagnant     |
-|       |                            |                | water containers in hotspot zones. |
-|       |                            |                | Larviciding in catch-basins.       |
-+-------+----------------------------+----------------+------------------------------------+
-| PEP   | Post-Exposure Prophylaxis  | Leptospirosis  | Distribute Doxycycline (200mg      |
-|       |                            |                | single dose for moderate exposure; |
-|       |                            |                | weekly for continuous wading)      |
-|       |                            |                | within 24–72 hours of flood event. |
-+-------+----------------------------+----------------+------------------------------------+
-| FAST  | Hydration & Fast-Lanes     | Dengue / Lepto | Establish triage fast-lanes; stage |
-|       |                            |                | NS1/IgM rapid diagnostic kits, ORS,|
-|       |                            |                | and IV fluids. Alert NKTI & San    |
-|       |                            |                | Lazaro for hemodialysis surge.     |
-+-------+----------------------------+----------------+------------------------------------+
-| PIO   | Public Information Advisory| Both           | Issue multi-channel SMS, barangay  |
-|       |                            |                | PA announcements, and clinic alert |
-|       |                            |                | bulletins on early fever warning.  |
-+-----------------------------------------------------------------------------------------+
-```
-
----
-
-## 8. Client Architecture & Extensibility
-
-* **Backend:** FastAPI (Python 3.11) with Uvicorn worker serving `/api/predict`, `/api/health`, `/api/historical-analogue`, and `/api/train-custom`.
-* **Frontend:** React 19 + TypeScript + Vite + Tailwind CSS + Three.js WebGL rendering at a locked 60 FPS.
-* **Offline Resilience:** Dual-mode execution engine: if backend network connectivity is interrupted, the frontend automatically activates a mathematical client-side fallback mirroring the exact GLM log-link and gradient boosted tree inference formulas.
-* **Multi-City Extensibility ("Your City CSV"):** LGUs outside NCR can upload custom weekly/monthly CSV surveillance datasets. The platform validates data schemas, aggregates time series, fits localized Poisson models, and outputs real-time out-of-sample LOYOCV validation metrics directly in the browser.
-
----
-
-## 9. References & Data Citations
-
-1. **Pelitro, R., et al. (2026).** *Weekly Dengue Incidence Linked to Meteorological Variables at City, Regional, and Multi-Setting Scales in the Philippines*. Zenodo. DOI: [10.5281/zenodo.18187841](https://doi.org/10.5281/zenodo.18187841). License: CC BY 4.0.
-2. **De Stercke, J., et al. (2023).** *Hydro-epidemiological data for Leptospirosis for areas in Brazil, Malaysia, Philippines, Argentina, China and Sri Lanka, 1978-2020*. NERC EDS Environmental Information Data Centre. DOI: [10.5285/1fb29ec3-863a-4eef-9ff0-17d47f0e6dd6](https://doi.org/10.5285/1fb29ec3-863a-4eef-9ff0-17d47f0e6dd6). License: Open Government Licence v3.0.
-3. **Philippine Statistics Authority (PSA). (2023).** *Philippine Standard Geographic Code (PSGC) 2023 Administrative Boundaries*. Republic of the Philippines.
-4. **Department of Health (DOH) Philippines. (2024–2025).** *National Dengue & Leptospirosis Surveillance Bulletins*. Epidemiology Bureau, Manila, Philippines.
+Pelitro, K. J., Matavia, T. O., Soriano, K., Garcia, G. M., Manzano, J. F., Bilbao, K., Delos Angeles, A. J., Cruz, R., Lagmay, A. M., & Bandoy, D. D. (2026). *Weekly dengue incidence linked to meteorological variables at city, regional, and multi-setting scales* (Version 1.1.0) [Data set]. Zenodo. https://doi.org/10.5281/zenodo.21978184

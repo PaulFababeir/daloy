@@ -40,7 +40,7 @@ Thumbs.db
 .idea/
 *.swp
 
-# AI assistant local config
+# Local editor/tool settings
 .claude/
 
 # Runtime temporary uploads

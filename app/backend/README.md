@@ -1,166 +1,79 @@
-# DALOY FastAPI Backend
+# DALOY backend
 
-High-performance public health nowcasting service predicting monthly **Dengue** (Quezon City, 2010–2025) and **Leptospirosis** (City of Manila, 2001–2012) case distributions from meteorological rainfall and lag indicators.
+A small FastAPI app that runs the two models, answers prediction requests, and serves the history, flood zones and facilities the frontend draws.
 
----
+## Running it
 
-## 1. Prerequisites
+From the repo root:
 
-- **Python 3.10+** (Python 3.11 recommended)
-- **pip** package manager
-
-Verify your Python installation:
-```bash
-python --version
-pip --version
-```
-
----
-
-## 2. Install Dependencies
-
-From the project root (`pjdsc-app`):
 ```bash
 pip install -r app/backend/requirements.txt
+python -m uvicorn main:app --app-dir app/backend --reload --port 8000
 ```
 
-Or from inside `app/backend`:
+Or from inside `app/backend`: `python -m uvicorn main:app --reload --port 8000`.
+
+Swagger docs are at http://127.0.0.1:8000/docs once it's running.
+
+## Layout
+
+```
+main.py                  API endpoints and request/response models
+prediction_engine.py     history, typical-month baseline, similar months,
+                         risk level, action plans, flood zones, facilities
+dataset/
+  dengue/main.py           dengue model (Poisson regression)
+  dengue/qc_dengue_monthly.csv
+  leptos/main.py           leptospirosis model (gradient boosting, Poisson loss)
+  leptos/manila_lepto_monthly.csv
+  util/helper.py           shared feature helpers
+temp_uploads/            CSVs uploaded through the experimental feature (git-ignored)
+```
+
+The models are refit from the CSVs each time they're called. With fewer than 200 rows that takes a fraction of a second, and it means an uploaded city's data is used the same way as ours. If a model call fails for any reason, `prediction_engine.py` falls back to a fixed-coefficient approximation so the app keeps responding.
+
+## Endpoints
+
+| Method | Path | What it does |
+|---|---|---|
+| GET | `/api/health` | health check |
+| POST | `/api/predict` | the main call the frontend makes: estimate, range, baseline comparison, similar months, action plan and flood zones |
+| GET/POST | `/api/predict/dengue`, `/api/predict/leptos` | just the model output; set `experimental: true` and `city` to use an uploaded CSV |
+| GET | `/api/history/{disease}` | the monthly training data (`dengue` or `lepto`) |
+| GET | `/api/flood-zones/{disease}` | flood-prone barangays for that city |
+| GET | `/api/facilities/{disease}` | hospitals and health centers for that city |
+| POST | `/api/upload-csv` | checks an uploaded CSV, returns errors, summary stats and the rainfall–cases Spearman correlation, and saves it to `temp_uploads/` |
+
+### Example
+
 ```bash
-cd app/backend
-pip install -r requirements.txt
+curl -X POST http://127.0.0.1:8000/api/predict \
+  -H "Content-Type: application/json" \
+  -d '{"disease": "dengue", "month": 8, "rain": 430, "prev_rain": 380}'
 ```
 
-*(Key libraries: `fastapi`, `uvicorn[standard]`, `scikit-learn`, `numpy`, `pandas`, `pydantic`).*
+Part of the response:
 
----
-
-## 3. How to Run the Server
-
-### Option A: From the Project Root (`pjdsc-app`) — Recommended
-```bash
-python -m uvicorn main:app --app-dir app/backend --reload --host 127.0.0.1 --port 8000
+```json
+{
+  "disease": "Dengue",
+  "city": "Quezon City",
+  "month_name": "August",
+  "predicted_cases": 750,
+  "ci_lower": 696,
+  "ci_upper": 804,
+  "baseline_cases": 1009.0,
+  "pct_diff_baseline": -26,
+  "level_label": "Below typical",
+  "similar_months": [
+    { "year": 2017, "month": 8, "rain": 421.7, "cases": 1618, "sim": 93 }
+  ]
+}
 ```
 
-### Option B: From Inside `app/backend`
-```bash
-cd app/backend
-python -m uvicorn main:app --reload --host 127.0.0.1 --port 8000
-```
-*(Or simply `uvicorn main:app --reload` if uvicorn is in your global PATH).*
+`disease` is `dengue` or `lepto`, `month` is 1–12, rainfall is in mm. `prev_rain` defaults to `rain` if you leave it out. The range (`ci_lower`, `ci_upper`) only covers Poisson counting noise; see `docs/METHODOLOGY.md`.
 
-### Command Flag Breakdown:
-- `main:app`: Looks for the `app` FastAPI instance inside `main.py`.
-- `--reload`: Hot-reloading enabled. The server restarts automatically whenever you modify `.py` files.
-- `--app-dir app/backend`: Points uvicorn to look inside the backend directory for `main.py`.
-- `--host 127.0.0.1`: Binds to local loopback (localhost).
-- `--port 8000`: Default backend port (matched with the Vite frontend reverse proxy).
+## Common problems
 
----
-
-## 4. Verification & Interactive API Documentation
-
-Once started, open these URLs in your browser:
-
-| Resource | URL | Description |
-|:---|:---|:---|
-| **Health Check** | `http://127.0.0.1:8000/api/health` | Returns `{"status":"healthy","service":"daloy-api"}` |
-| **Interactive Swagger UI** | `http://127.0.0.1:8000/docs` | Test all endpoints interactively in your browser |
-| **ReDoc Documentation** | `http://127.0.0.1:8000/redoc` | Clean, formal API reference |
-
----
-
-## 5. Available API Endpoints
-
-### `GET /api/health`
-Confirms the backend is alive.
-* **Response:**
-  ```json
-  {
-    "status": "healthy",
-    "service": "daloy-api"
-  }
-  ```
-
-### `POST /api/predict`
-Executes Poisson nowcasting model and returns expected cases, 95% Poisson confidence interval, baseline comparison, and nearest historical analogue months.
-* **Sample Request Body:**
-  ```json
-  {
-    "disease": "dengue",
-    "month": 8,
-    "rain": 430.0,
-    "prev_rain": 380.0,
-    "n_weeks": 4
-  }
-  ```
-* **Sample Response:**
-  ```json
-  {
-    "disease": "Dengue",
-    "city": "Quezon City",
-    "month": 8,
-    "month_name": "August",
-    "rain": 430.0,
-    "prev_rain": 380.0,
-    "n_weeks": 4,
-    "predicted_cases": 284,
-    "ci_lower": 251,
-    "ci_upper": 317,
-    "baseline_cases": 218.4,
-    "pct_diff_baseline": 30.0,
-    "level_id": "up",
-    "level_label": "Above typical",
-    "why_text": "Rainfall (430 mm) is 45% above typical August levels (296 mm).",
-    "effect_text": "+100 mm of rain adds ~42% expected cases.",
-    "similar_months": [
-      {
-        "year": 2012,
-        "month": 8,
-        "rain": 482.0,
-        "prev": 395.0,
-        "cases": 312,
-        "sim": 94
-      }
-    ],
-    "actions": [ ... ],
-    "flood_zones": [ ... ]
-  }
-  ```
-
-### `GET /api/history/{disease}`
-Retrieves the complete historical training panel (`dengue` or `lepto`) for scatter plots and trend validation.
-
-### `GET /api/flood-zones/{disease}`
-Returns vulnerable river basin corridors (e.g. San Juan River overflow zone for QC, España/Tondo esteros for Manila).
-
-### `POST /api/upload-csv`
-Accepts experimental user-uploaded monthly CSVs for other cities, calculates Spearman $\rho$ correlation, and runs Leave-One-Year-Out Cross-Validation (LOYO-CV).
-
----
-
-## 6. Architecture & Code Structure
-
-```
-app/backend/
-├── main.py                  # FastAPI application entrypoint & routing
-├── prediction_engine.py     # Verified Poisson GLM & nearest-neighbour math
-├── requirements.txt         # Python package dependencies
-└── README.md                # This setup guide
-```
-
----
-
-## 7. Troubleshooting
-
-- **Error: `'uvicorn' is not recognized as an internal or external command`**  
-  *Fix:* Use `python -m uvicorn` instead of bare `uvicorn`.
-
-- **Error: `Address already in use (Port 8000)`**  
-  *Fix:* Another process is holding port 8000. Either kill that process or run on port 8001:
-  ```bash
-  python -m uvicorn main:app --app-dir app/backend --reload --port 8001
-  ```
-  *(Note: If using port 8001, update the proxy port in `app/frontend/vite.config.ts`).*
-
-- **Error: `ModuleNotFoundError: No module named 'fastapi'`**  
-  *Fix:* Run `pip install -r app/backend/requirements.txt` inside your active virtual environment.
+- **`No module named 'fastapi'`**: the requirements aren't installed in the Python you're running. Activate your virtual environment and run the `pip install` line again.
+- **Port 8000 in use**: start on another port and update the proxy in `app/frontend/vite.config.ts`.
