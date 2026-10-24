@@ -1,9 +1,37 @@
 import React, { useState } from 'react';
-import { UploadCloud, FileText, CheckCircle, AlertCircle, Download, Copy, RefreshCw } from 'lucide-react';
+import { UploadCloud, CheckCircle, AlertCircle, Download, Copy, RefreshCw } from 'lucide-react';
 
 interface UploadCityViewProps {
   disease: 'dengue' | 'lepto';
   theme?: 'light' | 'dark';
+}
+
+function computeSpearmanRho(x: number[], y: number[]): number {
+  const n = Math.min(x.length, y.length);
+  if (n < 3) return 0;
+  const rank = (arr: number[]) => {
+    const indexed = arr.map((v, i) => ({ v, i })).sort((a, b) => a.v - b.v);
+    const ranks = new Array<number>(arr.length);
+    for (let i = 0; i < indexed.length; i++) {
+      ranks[indexed[i].i] = i + 1;
+    }
+    return ranks;
+  };
+  const rx = rank(x.slice(0, n));
+  const ry = rank(y.slice(0, n));
+  const meanRank = (n + 1) / 2;
+  let num = 0;
+  let denX = 0;
+  let denY = 0;
+  for (let i = 0; i < n; i++) {
+    const dx = rx[i] - meanRank;
+    const dy = ry[i] - meanRank;
+    num += dx * dy;
+    denX += dx * dx;
+    denY += dy * dy;
+  }
+  const denom = Math.sqrt(denX * denY);
+  return denom > 0 ? Number((num / denom).toFixed(3)) : 0;
 }
 
 export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initialDisease, theme = 'dark' }) => {
@@ -30,6 +58,8 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
   const schemas = {
     dengue: {
       cols: ['YR', 'MN', 'DC_QC', 'RF_NASA', 'n_weeks'],
+      rainCol: 'RF_NASA',
+      caseCol: 'DC_QC',
       sample: `YR,MN,DC_QC,RF_NASA,n_weeks
 2018,1,95,35.2,4
 2018,2,80,22.1,4
@@ -58,6 +88,8 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
     },
     lepto: {
       cols: ['month', 'lepto', 'rain_total_mm', 'n_weeks'],
+      rainCol: 'rain_total_mm',
+      caseCol: 'lepto',
       sample: `month,lepto,rain_total_mm,n_weeks
 2005-01,12,45.2,4
 2005-02,8,25.0,4
@@ -115,6 +147,7 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
     try {
       const formData = new FormData();
       formData.append('disease', disease);
+      formData.append('city', selectedFile.name.replace(/\.csv$/i, '') || 'custom_city');
       formData.append('file', selectedFile);
 
       const res = await fetch('/api/upload-csv', {
@@ -132,9 +165,13 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
       // Offline fallback client validator
     }
 
-    // In-browser fallback CSV validation
+    // In-browser fallback CSV validation with authentic Spearman correlation & summary stats
     const text = await selectedFile.text();
-    const lines = text.trim().split('\n').map(l => l.trim().split(','));
+    const lines = text
+      .trim()
+      .split(/\r?\n/)
+      .filter(l => l.trim().length > 0)
+      .map(l => l.trim().split(','));
     if (lines.length < 2) {
       setValidationResult({
         valid: false,
@@ -160,23 +197,35 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
       return;
     }
 
-    const rowCount = lines.length - 1;
+    const dataRows = lines.slice(1);
+    const rowCount = dataRows.length;
     const valid = rowCount >= 24;
     const errors = valid
       ? []
       : [`Need at least 24 monthly records for Leave-One-Year-Out cross-validation (found ${rowCount}).`];
 
+    const rainIdx = headers.indexOf(schemas[disease].rainCol);
+    const caseIdx = headers.indexOf(schemas[disease].caseCol);
+
+    const rains = dataRows.map(r => Number(r[rainIdx]) || 0);
+    const cases = dataRows.map(r => Number(r[caseIdx]) || 0);
+
+    const meanRain = rains.length > 0 ? Number((rains.reduce((a, b) => a + b, 0) / rains.length).toFixed(1)) : 0;
+    const totalCases = Math.round(cases.reduce((a, b) => a + b, 0));
+    const meanCases = cases.length > 0 ? Number((totalCases / cases.length).toFixed(1)) : 0;
+    const spearmanRho = computeSpearmanRho(rains, cases);
+
     setValidationResult({
       valid,
       row_count: rowCount,
       errors,
-      spearman_rho: 0.68,
+      spearman_rho: spearmanRho,
       summary: {
-        mean_rainfall: 248.5,
-        mean_cases: 172.0,
-        total_cases: 4128
+        mean_rainfall: meanRain,
+        mean_cases: meanCases,
+        total_cases: totalCases
       },
-      preview: lines.slice(1, 6).map(r => {
+      preview: dataRows.slice(0, 5).map(r => {
         const obj: any = {};
         headers.forEach((h, i) => {
           obj[h] = r[i];
@@ -364,7 +413,7 @@ export const UploadCityView: React.FC<UploadCityViewProps> = ({ disease: initial
                     <div className={`p-4 rounded-2xl border ${insetCls}`}>
                       <span className={`text-xs ${mutedCls}`}>Spearman Rank ρ</span>
                       <div className={`text-xl font-extrabold font-mono mt-1 ${isDark ? 'text-teal-400' : 'text-stone-900'}`}>
-                        +{validationResult.spearman_rho}
+                        {validationResult.spearman_rho >= 0 ? `+${validationResult.spearman_rho}` : validationResult.spearman_rho}
                       </div>
                       <span className="text-[10px] opacity-75">Rain-case correlation</span>
                     </div>

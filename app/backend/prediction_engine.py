@@ -3,7 +3,7 @@ DALOY Prediction Engine
 Supports:
   - Dengue (Quezon City) 2010–2025 Poisson model
   - Leptospirosis (Manila) 2001–2012 Poisson/GBM model
-  - Nearest similar historical month matching
+  - Nearest similar historical month matching (linear mm distance + seasonal proximity + transparent explanation)
   - Flood-vulnerable zone data
   - CSV validation and rank correlation for user-uploaded city datasets
 """
@@ -62,6 +62,7 @@ class DaloyEngine:
                 ],
                 'mu': 0.0,
                 'sdv': 1.0,
+                'rain_std': 180.0,
             },
             'lepto': {
                 'disease': 'Leptospirosis',
@@ -77,6 +78,7 @@ class DaloyEngine:
                 ],
                 'mu': 0.0,
                 'sdv': 1.0,
+                'rain_std': 160.0,
             }
         }
         self.history: Dict[str, List[Dict[str, Any]]] = {
@@ -142,8 +144,12 @@ class DaloyEngine:
             logs = [math.log1p(max(0.0, d['rain'])) for d in rows]
             mu = sum(logs) / len(logs)
             sdv = math.sqrt(sum((v - mu) ** 2 for v in logs) / len(logs)) or 1.0
+            rains = [max(0.0, d['rain']) for d in rows]
+            r_mean = sum(rains) / len(rains)
+            r_std = math.sqrt(sum((v - r_mean) ** 2 for v in rains) / len(rains)) or 150.0
             cfg['mu'] = mu
             cfg['sdv'] = sdv
+            cfg['rain_std'] = r_std
             return [d for d in rows if d['prev'] is not None]
 
         # Synthetic fallback if CSV files are missing
@@ -167,8 +173,12 @@ class DaloyEngine:
         logs = [math.log1p(d['rain']) for d in rows]
         mu = sum(logs) / len(logs)
         sdv = math.sqrt(sum((v - mu) ** 2 for v in logs) / len(logs)) or 1.0
+        rains = [max(0.0, d['rain']) for d in rows]
+        r_mean = sum(rains) / len(rains)
+        r_std = math.sqrt(sum((v - r_mean) ** 2 for v in rains) / len(rains)) or 150.0
         cfg['mu'] = mu
         cfg['sdv'] = sdv
+        cfg['rain_std'] = r_std
 
         usable = [d for d in rows if d['prev'] is not None]
         for d in usable:
@@ -206,7 +216,7 @@ class DaloyEngine:
 
         if key == 'lepto':
             try:
-                res = leptos_model(float(rain), float(p_val), month_name)
+                res = leptos_model(float(rain), float(p_val), month_name, n_weeks=n_weeks)
                 arr = res.tolist() if hasattr(res, 'tolist') else list(res)
                 if len(arr) > 0:
                     return float(arr[0])
@@ -234,29 +244,59 @@ class DaloyEngine:
         return {'id': 'high', 'label': 'Well above typical'}
 
     def similar_months(self, key: str, rain: float, prev: Optional[float], month: int, k: int = 4) -> List[Dict[str, Any]]:
+        """
+        Finds the closest historical months using normalized Euclidean distance in physical mm
+        and circular calendar month proximity (as specified in METHODOLOGY.md Section 5),
+        so that visual x-axis proximity on the Response Curve graph matches the selected twin.
+        """
         cfg = self.config[key]
-        def z(v):
-            return (math.log1p(max(0.0, v if v is not None else 0.0)) - cfg['mu']) / cfg['sdv']
+        r_std = cfg.get('rain_std', 170.0) or 170.0
+        q_prev = prev if prev is not None else rain
 
-        def feat(d_rain, d_prev, d_month):
-            a = (2.0 * math.pi * d_month) / 12.0
-            p_v = d_prev if d_prev is not None else d_rain
-            return [z(d_rain), z(p_v), math.sin(a) * 0.8, math.cos(a) * 0.8]
-
-        q = feat(rain, prev, month)
         results = []
         for d in self.history[key]:
-            f = feat(d['rain'], d['prev'], d['month'])
-            dist = math.sqrt(sum((a - b) ** 2 for a, b in zip(f, q)))
-            sim = round(100.0 * math.exp(-dist * 1.2))
+            d_rain = float(d['rain'])
+            d_prev = float(d['prev']) if d['prev'] is not None else d_rain
+            d_month = int(d['month'])
+
+            # Linear rainfall difference normalized by std (primary visual & hydrological driver)
+            diff_rain = abs(rain - d_rain)
+            norm_rain = diff_rain / r_std
+
+            # Antecedent rainfall difference normalized by std
+            diff_prev = abs(q_prev - d_prev)
+            norm_prev = diff_prev / r_std
+
+            # Circular calendar month distance in [0, 6] -> normalized to [0, 1]
+            raw_m_diff = abs(month - d_month)
+            m_gap = min(raw_m_diff, 12 - raw_m_diff)
+            norm_month = m_gap / 6.0
+
+            # Weighted Euclidean distance: current rain is primary so x-axis alignment is intuitive,
+            # while antecedent rain & seasonal alignment disambiguate points with similar current rain.
+            if key == 'dengue':
+                dist = math.sqrt((1.25 * norm_rain) ** 2 + (0.45 * norm_prev) ** 2 + (0.55 * norm_month) ** 2)
+            else:
+                dist = math.sqrt((1.15 * norm_rain) ** 2 + (0.65 * norm_prev) ** 2 + (0.55 * norm_month) ** 2)
+
+            sim = max(1, min(99, round(100.0 * math.exp(-dist * 0.95))))
+            m_label = "Same calendar month" if m_gap == 0 else f"{m_gap} mo seasonal offset"
+            match_reason = (
+                f"Δ {round(diff_rain, 1)} mm this mo · Δ {round(diff_prev, 1)} mm prev mo · {m_label}"
+            )
+
             results.append({
                 'year': d['year'],
-                'month': d['month'],
+                'month': d_month,
                 'rain': d['rain'],
                 'prev': d['prev'],
                 'cases': d['cases'],
-                'dist': dist,
-                'sim': sim
+                'dist': round(dist, 4),
+                'sim': sim,
+                'rain_diff': round(diff_rain, 1),
+                'prev_diff': round(diff_prev, 1),
+                'month_gap': m_gap,
+                'match_reason': match_reason
             })
         results.sort(key=lambda x: x['dist'])
         return results[:k]
@@ -293,21 +333,48 @@ class DaloyEngine:
         if key == 'dengue':
             # Quezon City zones
             return [
-                {'name': 'Barangay Tatalon', 'risk': 'High', 'level': 3, 'desc': 'San Juan River overflow zone; dense residential drainage corridor'},
-                {'name': 'Barangay Bagong Silangan', 'risk': 'High', 'level': 3, 'desc': 'Marikina River tributary floodplain; rapid inundation risk'},
-                {'name': 'Barangay Roxas District', 'risk': 'Medium', 'level': 2, 'desc': 'Low elevation basin near Scout area creek outlets'},
-                {'name': 'Barangay Doña Imelda', 'risk': 'Medium', 'level': 2, 'desc': 'Bordering San Juan River; vulnerable during heavy monsoon surges'},
-                {'name': 'Barangay Batasan Hills', 'risk': 'Low', 'level': 1, 'desc': 'Elevated terrain; localized gully erosion and pocket ponding'}
+                {'name': 'Barangay Tatalon', 'risk': 'High', 'level': 3, 'center': [121.0153, 14.6242], 'desc': 'San Juan River overflow zone; dense residential drainage corridor'},
+                {'name': 'Barangay Bagong Silangan', 'risk': 'High', 'level': 3, 'center': [121.1050, 14.7060], 'desc': 'Marikina River tributary floodplain; rapid inundation risk'},
+                {'name': 'Barangay Roxas District', 'risk': 'Medium', 'level': 2, 'center': [121.0216, 14.6283], 'desc': 'Low elevation basin near Scout area creek outlets'},
+                {'name': 'Barangay Doña Imelda', 'risk': 'Medium', 'level': 2, 'center': [121.0177, 14.6151], 'desc': 'Bordering San Juan River; vulnerable during heavy monsoon surges'},
+                {'name': 'Barangay Batasan Hills', 'risk': 'Low', 'level': 1, 'center': [121.0945, 14.6835], 'desc': 'Elevated terrain; localized gully erosion and pocket ponding'}
             ]
         else:
             # Manila zones
             return [
-                {'name': 'Barangay Sampaloc (Espana corridor)', 'risk': 'High', 'level': 3, 'desc': 'Chronic street-level flooding; primary leptospirosis cluster zone'},
-                {'name': 'Barangay Tondo I & II', 'risk': 'High', 'level': 3, 'desc': 'Estero de Vitas tidal influence and high wading frequency'},
-                {'name': 'Barangay Ermita - Taft Ave', 'risk': 'Medium', 'level': 2, 'desc': 'Storm drain backup; pedestrian and commuter contact risk'},
-                {'name': 'Barangay Santa Ana', 'risk': 'Medium', 'level': 2, 'desc': 'Pasig River tidal bend flood zone during monsoon tides'},
-                {'name': 'Barangay Paco', 'risk': 'Low', 'level': 1, 'desc': 'Estero de Paco catchment; mitigated by pumping station operations'}
+                {'name': 'Barangay Sampaloc (Espana corridor)', 'risk': 'High', 'level': 3, 'center': [120.9965, 14.6075], 'desc': 'Chronic street-level flooding; primary leptospirosis cluster zone'},
+                {'name': 'Barangay Tondo I & II', 'risk': 'High', 'level': 3, 'center': [120.9680, 14.6185], 'desc': 'Estero de Vitas tidal influence and high wading frequency'},
+                {'name': 'Barangay Ermita - Taft Ave', 'risk': 'Medium', 'level': 2, 'center': [120.9835, 14.5815], 'desc': 'Storm drain backup; pedestrian and commuter contact risk'},
+                {'name': 'Barangay Santa Ana', 'risk': 'Medium', 'level': 2, 'center': [121.0115, 14.5815], 'desc': 'Pasig River tidal bend flood zone during monsoon tides'},
+                {'name': 'Barangay Paco', 'risk': 'Low', 'level': 1, 'center': [120.9945, 14.5810], 'desc': 'Estero de Paco catchment; mitigated by pumping station operations'}
             ]
+
+    def get_health_facilities(self, key: str) -> List[Dict[str, Any]]:
+        if key == 'dengue':
+            return [
+                {'name': 'East Avenue Medical Center (EAMC)', 'type': 'hospital', 'category': 'DOH Level 3 Tertiary', 'coords': [121.0492, 14.6398], 'role': 'Primary Dengue Fast-Lane & ICU surge hub'},
+                {'name': 'National Kidney and Transplant Institute (NKTI)', 'type': 'hospital', 'category': 'DOH Specialty Tertiary', 'coords': [121.0480, 14.6476], 'role': 'Renal & hematology referral center'},
+                {'name': 'Quezon City General Hospital (QCGH)', 'type': 'hospital', 'category': 'LGU Level 3 Tertiary', 'coords': [121.0182, 14.6612], 'role': '24/7 Dengue Fast-Lanes & ambulatory IV hydration bays'},
+                {'name': "Philippine Children's Medical Center (PCMC)", 'type': 'hospital', 'category': 'DOH Pediatric Specialty', 'coords': [121.0398, 14.6512], 'role': 'Pediatric dengue shock syndrome (DSS) & PICU triage'},
+                {'name': 'Quirino Memorial Medical Center (QMMC)', 'type': 'hospital', 'category': 'DOH Level 3 Tertiary', 'coords': [121.0724, 14.6222], 'role': 'Eastern QC tertiary referral serving Districts 3 & 4'},
+                {'name': 'Novaliches District Hospital (NDH)', 'type': 'hospital', 'category': 'LGU Level 2 Hospital', 'coords': [121.0375, 14.7089], 'role': 'Northern QC dengue inpatient hydration'},
+                {'name': 'Batasan Hills Super Health Center', 'type': 'health_center', 'category': 'QCHD Super Health Center', 'coords': [121.0922, 14.6816], 'role': 'NS1 rapid test kits, CBC/platelet counts & ORS hub'},
+                {'name': 'Tatalon Health Center', 'type': 'health_center', 'category': 'QCHD Health Center', 'coords': [121.0142, 14.6213], 'role': 'San Juan River basin NS1 testing & 4S vector dispatch'},
+                {'name': 'Bagong Silangan Health Center', 'type': 'health_center', 'category': 'QCHD Health Center', 'coords': [121.1075, 14.7065], 'role': 'Marikina floodplain fever triage & ORS staging'},
+                {'name': 'Kamuning Super Health Center', 'type': 'health_center', 'category': 'QCHD Super Health Center', 'coords': [121.0422, 14.6273], 'role': 'District 4 diagnostic & outpatient hydration hub'}
+            ]
+        return [
+            {'name': 'Philippine General Hospital (PGH)', 'type': 'hospital', 'category': 'National University Tertiary', 'coords': [120.9855, 14.5780], 'role': 'Primary acute dialysis, ICU & severe leptospirosis hub'},
+            {'name': 'San Lazaro Hospital (SLH)', 'type': 'hospital', 'category': 'DOH Infectious Disease Specialty', 'coords': [120.9852, 14.6182], 'role': 'National apex infectious disease & leptospirosis pavilions'},
+            {'name': 'Ospital ng Maynila Medical Center (OMMC)', 'type': 'hospital', 'category': 'LGU Level 3 Tertiary', 'coords': [120.9864, 14.5639], 'role': 'Manila LGU tertiary renal replacement therapy & ICU'},
+            {'name': 'Jose R. Reyes Memorial Medical Center (JRRMMC)', 'type': 'hospital', 'category': 'DOH Level 3 Tertiary', 'coords': [120.9808, 14.6105], 'role': 'Emergency & internal medicine surge admissions'},
+            {'name': 'Ospital ng Sampaloc', 'type': 'hospital', 'category': 'LGU District IV Hospital', 'coords': [120.9967, 14.6078], 'role': 'España flood corridor acute leptospirosis triage & PEP'},
+            {'name': 'Ospital ng Tondo', 'type': 'hospital', 'category': 'LGU District II Hospital', 'coords': [120.9783, 14.6260], 'role': 'Estero de Vitas flood zone hospital triage'},
+            {'name': 'Gat Andres Bonifacio Memorial Medical Center', 'type': 'hospital', 'category': 'LGU Level 2 District I', 'coords': [120.9648, 14.6011], 'role': 'Coastal Tondo I flood-borne disease admissions'},
+            {'name': 'Sta. Ana Hospital (MIDCC)', 'type': 'hospital', 'category': 'LGU Level 2 District VI', 'coords': [121.0164, 14.5834], 'role': 'Manila Infectious Disease Control Center for Pasig River bend'},
+            {'name': 'Justice Jose Abad Santos General Hospital', 'type': 'health_center', 'category': 'LGU District III PEP Hub', 'coords': [120.9772, 14.5958], 'role': 'Binondo/San Nicolas post-flood Doxycycline PEP staging'},
+            {'name': 'Paco Health Center (MHD District V)', 'type': 'health_center', 'category': 'MHD Primary Health Center', 'coords': [120.9922, 14.5812], 'role': 'Estero de Paco single-dose 200mg Doxycycline PEP station'}
+        ]
 
 
 engine = DaloyEngine()

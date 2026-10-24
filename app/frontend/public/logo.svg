@@ -1,0 +1,47 @@
+<svg viewBox="0 0 1024 1024" width="1024" height="1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+        <!-- Primary Monsoon & Leptospirosis Wave Gradient (Sky to Teal) -->
+        <linearGradient id="daloyWaveTeal" x1="0%" y1="50%" x2="100%" y2="20%">
+            <stop offset="0%" stop-color="#38BDF8" />
+            <stop offset="60%" stop-color="#0D9488" />
+            <stop offset="100%" stop-color="#2DD4BF" />
+        </linearGradient>
+
+        <!-- Secondary Dengue Outbreak Surge Wave Gradient (Deep Rose to Coral) -->
+        <linearGradient id="daloyWaveRose" x1="0%" y1="80%" x2="100%" y2="10%">
+            <stop offset="0%" stop-color="#9F1239" />
+            <stop offset="50%" stop-color="#E11D48" />
+            <stop offset="100%" stop-color="#FB7185" />
+        </linearGradient>
+    </defs>
+
+    <!-- Background Subtle Radar Ring -->
+    <circle 
+        cx="512" 
+        cy="512" 
+        r="340" 
+        fill="none" 
+        stroke="#38BDF8" 
+        stroke-width="6" 
+        stroke-dasharray="16 24" 
+        opacity="0.25" 
+    />
+    
+    <!-- Primary Teal Hydrological Wave (Filled Sculpted Ribbon - 14d Lepto Lag) -->
+    <path 
+        d="M 110 620 C 260 620, 330 250, 500 250 C 650 250, 710 540, 914 440 C 740 640, 620 410, 490 410 C 360 410, 290 730, 110 620 Z" 
+        fill="url(#daloyWaveTeal)" 
+    />
+    
+    <!-- Intersecting Crimson Outbreak Surge Wave (Phase-shifted for 28d Dengue Lag) -->
+    <path 
+        d="M 130 710 C 340 740, 440 340, 610 310 C 750 285, 810 490, 920 350 C 830 590, 720 450, 600 465 C 450 485, 350 820, 130 710 Z" 
+        fill="url(#daloyWaveRose)" 
+        opacity="0.92" 
+    />
+
+    <!-- Forecast Horizon Spark Nodes (14d Lepto Peak & 28d Dengue Peak) -->
+    <circle cx="500" cy="210" r="26" fill="#2DD4BF" />
+    <circle cx="620" cy="265" r="32" fill="#FB7185" />
+    <circle cx="620" cy="265" r="14" fill="#FFFFFF" />
+</svg>

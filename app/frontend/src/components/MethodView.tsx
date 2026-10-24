@@ -1,5 +1,6 @@
 import React from 'react';
-import { Database, Filter, Cpu, CheckCircle2, AlertOctagon, BookOpen } from 'lucide-react';
+import { Database, Filter, Cpu, CheckCircle2, AlertOctagon, BookOpen, MapPin, ShieldAlert } from 'lucide-react';
+import { DaloyAnimatedLogo } from './DaloyAnimatedLogo';
 
 interface MethodViewProps {
   theme?: 'light' | 'dark';
@@ -24,9 +25,19 @@ export const MethodView: React.FC<MethodViewProps> = ({ theme = 'dark' }) => {
     <div className="space-y-8">
       {/* 4-Stage Pipeline */}
       <div className={`p-8 rounded-3xl border ${cardCls}`}>
-        <h2 className={`text-xl font-bold mb-2 ${headingCls}`}>
-          Methodological Pipeline
-        </h2>
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-14 h-14 rounded-2xl ring-1 ring-teal-500/30 bg-white/10 dark:bg-slate-800/40 p-1 shrink-0 flex items-center justify-center">
+            <DaloyAnimatedLogo size={48} animated={true} />
+          </div>
+          <div>
+            <h2 className={`text-xl font-bold ${headingCls}`}>
+              DALOY · Methodological Framework
+            </h2>
+            <p className={`text-xs ${mutedCls}`}>
+              Direct Action for Leptospirosis &amp; Outbreak Yields · Data-to-Action Epidemiological Intelligence
+            </p>
+          </div>
+        </div>
         <p className={`text-xs mb-8 max-w-2xl ${mutedCls}`}>
           From satellite precipitation observations to operational epidemiological predictions in 4 reproducible steps.
         </p>
@@ -136,6 +147,124 @@ export const MethodView: React.FC<MethodViewProps> = ({ theme = 'dark' }) => {
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      {/* 3D Geospatial Digital Twin & Verified Infrastructure */}
+      <div className={`p-8 rounded-3xl border ${cardCls}`}>
+        <div className="flex items-center gap-2 mb-2">
+          <MapPin className="w-5 h-5 text-teal-500" />
+          <h3 className={`text-base font-bold ${headingCls}`}>
+            3D Geospatial Digital Twin &amp; Verified Infrastructure
+          </h3>
+        </div>
+        <p className={`text-xs mb-6 max-w-3xl ${mutedCls}`}>
+          Accurate spatial modeling connecting mathematical forecast horizons to physical municipal terrain, sub-district administrative boundaries, and point-of-care emergency infrastructure.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className={`p-5 rounded-2xl border ${insetCls}`}>
+            <div className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-sky-400' : 'text-sky-700'}`}>
+              Geospatial Mesh
+            </div>
+            <h4 className={`text-sm font-bold mt-1 ${headingCls}`}>
+              17 LGUs &amp; 827 Barangays
+            </h4>
+            <p className={`text-xs mt-2 ${mutedCls}`}>
+              100% official PSA / PSGC 2023 polygonal boundaries for all 17 Metro Manila local government units and 827 barangays with distinct boundary outlines and interactive hover inspection.
+            </p>
+          </div>
+
+          <div className={`p-5 rounded-2xl border ${insetCls}`}>
+            <div className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-amber-400' : 'text-amber-700'}`}>
+              Targeted Interventions
+            </div>
+            <h4 className={`text-sm font-bold mt-1 ${headingCls}`}>
+              10 Prioritized Hotspot Grids
+            </h4>
+            <p className={`text-xs mt-2 ${mutedCls}`}>
+              Calibrated against UP NOAH alluvial flood hazard maps: 5 high-burden Quezon City dengue barangays and 5 acute Manila monsoon-flood leptospirosis wading basins (Tondo, Sampaloc, Ermita, Paco, Sta. Ana).
+            </p>
+          </div>
+
+          <div className={`p-5 rounded-2xl border ${insetCls}`}>
+            <div className={`text-xs font-bold uppercase tracking-wider ${isDark ? 'text-emerald-400' : 'text-emerald-700'}`}>
+              Spatial Verification
+            </div>
+            <h4 className={`text-sm font-bold mt-1 ${headingCls}`}>
+              36 Public Health Facilities
+            </h4>
+            <p className={`text-xs mt-2 ${mutedCls}`}>
+              18 tertiary referral hospitals (PGH, San Lazaro, NKTI, QCGH) and 18 super health staging hubs. Verified via Point-in-Polygon (PIP) raycasting with 100% boundary accuracy.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Standardized Public Health Action Protocol Matrix */}
+      <div className={`p-8 rounded-3xl border ${cardCls}`}>
+        <div className="flex items-center gap-2 mb-2">
+          <ShieldAlert className="w-5 h-5 text-rose-500" />
+          <h3 className={`text-base font-bold ${headingCls}`}>
+            Standardized Public Health Action Protocol Matrix
+          </h3>
+        </div>
+        <p className={`text-xs mb-6 max-w-3xl ${mutedCls}`}>
+          Translates model predictions directly into clear operational orders for Local Health Boards, City Disaster Risk Reduction and Management Offices (CDRRMO), and barangay health workers (BHW).
+        </p>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className={`p-5 rounded-2xl border ${insetCls}`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono font-black text-sm px-2.5 py-1 rounded-lg bg-rose-500/20 text-rose-400 border border-rose-500/30">
+                4S Sweeps
+              </span>
+              <span className={`text-[10px] font-bold uppercase ${mutedCls}`}>Dengue</span>
+            </div>
+            <h4 className={`text-xs font-bold mt-1 ${headingCls}`}>Search &amp; Destroy</h4>
+            <p className={`text-[11px] mt-2 leading-relaxed ${mutedCls}`}>
+              Mobilize BHW teams within 48h of heavy rain to eliminate domestic water receptacles. Targeted larviciding in high-risk catchment zones.
+            </p>
+          </div>
+
+          <div className={`p-5 rounded-2xl border ${insetCls}`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono font-black text-sm px-2.5 py-1 rounded-lg bg-teal-500/20 text-teal-400 border border-teal-500/30">
+                PEP Protocol
+              </span>
+              <span className={`text-[10px] font-bold uppercase ${mutedCls}`}>Leptospirosis</span>
+            </div>
+            <h4 className={`text-xs font-bold mt-1 ${headingCls}`}>Post-Exposure Prophylaxis</h4>
+            <p className={`text-[11px] mt-2 leading-relaxed ${mutedCls}`}>
+              Pre-position 200mg Doxycycline capsules at district staging clinics for immediate distribution within 24–72 hours of floodwater exposure.
+            </p>
+          </div>
+
+          <div className={`p-5 rounded-2xl border ${insetCls}`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono font-black text-sm px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                FAST Lanes
+              </span>
+              <span className={`text-[10px] font-bold uppercase ${mutedCls}`}>Both</span>
+            </div>
+            <h4 className={`text-xs font-bold mt-1 ${headingCls}`}>Clinical Staging &amp; Triage</h4>
+            <p className={`text-[11px] mt-2 leading-relaxed ${mutedCls}`}>
+              Activate rapid fever triage fast-lanes; stock NS1/IgM antigen test kits and IV fluid buffers. Alert NKTI for hemodialysis surge capacity.
+            </p>
+          </div>
+
+          <div className={`p-5 rounded-2xl border ${insetCls}`}>
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono font-black text-sm px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30">
+                PIO Alerts
+              </span>
+              <span className={`text-[10px] font-bold uppercase ${mutedCls}`}>Multi-Channel</span>
+            </div>
+            <h4 className={`text-xs font-bold mt-1 ${headingCls}`}>Community Information</h4>
+            <p className={`text-[11px] mt-2 leading-relaxed ${mutedCls}`}>
+              Broadcast SMS flood-wading advisories, PA system reminders in high-water communities, and digital bulletins on early warning symptoms.
+            </p>
+          </div>
         </div>
       </div>
 

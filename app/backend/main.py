@@ -80,7 +80,7 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 
 
 @app.post("/upload-csv")
-async def upload_csv(file: UploadFile = File(...)):
+async def upload_csv_legacy(file: UploadFile = File(...)):
     if not file.filename.endswith(".csv"):
         raise HTTPException(
             status_code=400,
@@ -88,7 +88,6 @@ async def upload_csv(file: UploadFile = File(...)):
         )
 
     contents = await file.read()
-
     df = pd.read_csv(BytesIO(contents))
 
     return {
@@ -96,6 +95,7 @@ async def upload_csv(file: UploadFile = File(...)):
         "rows": len(df),
         "columns": df.columns.tolist()
     }
+
 
 @app.api_route("/api/predict/leptos", methods=["GET", "POST"])
 def predict_leptos(features: PredictFeatures):
@@ -230,7 +230,20 @@ def get_flood_zones(disease: str):
     return {
         "disease": engine.config[key]['disease'],
         "city": engine.config[key]['city'],
-        "zones": engine.get_flood_zones(key)
+        "zones": engine.get_flood_zones(key),
+        "facilities": engine.get_health_facilities(key)
+    }
+
+
+@app.get("/api/facilities/{disease}")
+def get_facilities(disease: str):
+    key = disease.lower()
+    if key not in ("dengue", "lepto"):
+        raise HTTPException(status_code=400, detail="Disease must be 'dengue' or 'lepto'")
+    return {
+        "disease": engine.config[key]['disease'],
+        "city": engine.config[key]['city'],
+        "facilities": engine.get_health_facilities(key)
     }
 
 
@@ -238,7 +251,7 @@ def get_flood_zones(disease: str):
 async def upload_csv(
     disease: str = Form(...),
     file: UploadFile = File(...),
-    city: str = Form(...),
+    city: Optional[str] = Form("custom_city"),
 ):
     key = disease.lower()
 
@@ -250,7 +263,6 @@ async def upload_csv(
 
     # Read uploaded file into bytes
     contents = await file.read()
-    
 
     # Convert CSV contents into a pandas DataFrame
     try:
@@ -338,8 +350,8 @@ async def upload_csv(
             f"(found {len(parsed_df)})."
         )
 
-    
-    temp_filename = f"{city}.csv"
+    safe_city = (city or "custom_city").strip().replace(" ", "_").lower()
+    temp_filename = f"{safe_city}.csv"
     temp_path = UPLOAD_DIR / temp_filename
     
     with open(temp_path, "wb") as f:
